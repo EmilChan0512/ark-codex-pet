@@ -42,6 +42,9 @@ pnpm inspect -- char_4058_pepe --skin 默认 --view 基建 \
 pnpm download -- .cache/pepe.manifest.json --output .cache/pepe
 pnpm inspect-animations -- .cache/pepe \
   --output .cache/pepe.animations.json
+pnpm exec playwright install chromium
+pnpm preview -- .cache/pepe --animation Move --frames 8 \
+  --width 512 --height 512 --output .cache/preview-move
 ```
 
 A resolved manifest now includes:
@@ -61,6 +64,8 @@ The concrete version above is illustrative; the command reads the version from t
 
 `inspect-animations` samples each animation at 16 deterministic timestamps by default. Use `--samples` to trade speed for a denser union-bounds estimate. The command reports unsupported exporter families explicitly instead of attempting to parse them with an incompatible runtime.
 
+`preview` launches a controlled headless Chromium instance, seeks the selected Spine animation to deterministic timestamps, and writes transparent PNG frames plus `contact-sheet.png`. Some PRTS packages declare a larger Atlas page than the PNG currently served by the CDN (Pepe declares 624×624 but receives 416×416); the preview server detects this mismatch and normalizes the texture to the Atlas dimensions in memory without modifying the downloaded source package.
+
 ## Why version detection comes first
 
 Spine binary data is runtime-version-sensitive. The browser renderer must use a runtime compatible with the model's exporter version. The project therefore routes a model through a versioned adapter before trying to load animations.
@@ -71,12 +76,12 @@ Texture filenames are read from `.atlas`; the tool does not assume `${base}.png`
 
 ## Next milestone
 
-Add the browser renderer and deterministic frame capture layer:
+Build the Codex compositor on top of the verified browser renderer:
 
-- load the local package in a controlled Chromium canvas
-- seek to the timestamps selected by the baker
-- capture transparent PNG frames
 - normalize union bounds and foot baseline
+- map the six source animations to the nine Codex states
+- mirror the left-running row from the right-running row
+- compose the fixed 8×9 WebP sheet and `pet.json`
 - preview contact sheets
 
 The first adapter will be selected from the exporter version reported by the PRTS model manifest rather than hard-coded to the newest Pixi runtime.

@@ -5,6 +5,7 @@ import { downloadManifestAssets } from "./download.js";
 import { inspectAnimations } from "./inspect-animations.js";
 import { loadLocalSpinePackage } from "./local-package.js";
 import { fetchPrtsMeta, listVariants, resolveManifest } from "./prts-client.js";
+import { renderAnimationPreview } from "./render-preview.js";
 import { resourceManifestSchema } from "./types.js";
 
 const program = new Command()
@@ -86,6 +87,59 @@ program
       const spinePackage = await loadLocalSpinePackage(packageDirectory);
       const report = await inspectAnimations(spinePackage, samples);
       await emitJson(report, options.output);
+    },
+  );
+
+program
+  .command("preview")
+  .argument("<package-directory>", "directory produced by download")
+  .requiredOption("--animation <name>", "animation to render")
+  .option("--frames <count>", "number of frames", "8")
+  .option("--width <pixels>", "frame width", "512")
+  .option("--height <pixels>", "frame height", "512")
+  .option("--padding <pixels>", "transparent padding", "24")
+  .requiredOption("-o, --output <directory>", "preview output directory")
+  .action(
+    async (
+      packageDirectory: string,
+      options: {
+        animation: string;
+        frames: string;
+        width: string;
+        height: string;
+        padding: string;
+        output: string;
+      },
+    ) => {
+      const integers = Object.fromEntries(
+        ["frames", "width", "height", "padding"].map((key) => [
+          key,
+          Number.parseInt(options[key as keyof typeof options], 10),
+        ]),
+      ) as Record<"frames" | "width" | "height" | "padding", number>;
+      if (
+        !Number.isInteger(integers.width) ||
+        !Number.isInteger(integers.height) ||
+        integers.width < 32 ||
+        integers.height < 32 ||
+        integers.width > 4096 ||
+        integers.height > 4096
+      ) {
+        throw new Error("preview dimensions must be integers between 32 and 4096");
+      }
+      if (!Number.isInteger(integers.padding) || integers.padding < 0) {
+        throw new Error("--padding must be a non-negative integer");
+      }
+      const spinePackage = await loadLocalSpinePackage(packageDirectory);
+      const result = await renderAnimationPreview(spinePackage, {
+        animation: options.animation,
+        frames: integers.frames,
+        width: integers.width,
+        height: integers.height,
+        padding: integers.padding,
+        outputDirectory: options.output,
+      });
+      await emitJson(result);
     },
   );
 

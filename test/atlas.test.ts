@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseAtlasPageNames } from "../src/atlas.js";
+import { parseAtlasPageNames, parseAtlasPages } from "../src/atlas.js";
 
 describe("parseAtlasPageNames", () => {
   it("distinguishes texture pages from region names", () => {
@@ -38,5 +38,8 @@ body
 `;
 
     expect(parseAtlasPageNames(atlas)).toEqual(["build_char.png"]);
+    expect(parseAtlasPages(atlas)).toEqual([
+      { name: "build_char.png", width: 624, height: 624 },
+    ]);
   });
 });
