@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "characterId": "char_4058_pepe",
+  "skin": "默认",
+  "view": "基建",
+  "codexVersion": 1,
+  "normalization": {
+    "cellWidth": 192,
+    "cellHeight": 208,
+    "anchor": "bottom-center",
+    "baselineY": 198,
+    "padding": 10
+  },
+  "states": {
+    "idle": { "animation": "TO_BE_SELECTED", "frames": 8 },
+    "running-right": { "animation": "TO_BE_SELECTED", "frames": 8 },
+    "running-left": { "deriveFrom": "running-right", "flipX": true },
+    "waving": { "animation": "TO_BE_SELECTED", "frames": 8 },
+    "jumping": { "animation": "TO_BE_SELECTED", "frames": 8 },
+    "failed": { "animation": "TO_BE_SELECTED", "frames": 8 },
+    "waiting": { "animation": "TO_BE_SELECTED", "frames": 8 },
+    "running": { "animation": "TO_BE_SELECTED", "frames": 8 },
+    "review": { "animation": "TO_BE_SELECTED", "frames": 8 }
+  }
+}
