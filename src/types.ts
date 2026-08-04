@@ -18,6 +18,13 @@ export interface VariantChoice {
   file: string;
 }
 
+export interface SpineSourceInfo {
+  hash: string | null;
+  version: string | null;
+  majorMinor: string | null;
+  recommendedRuntime: string;
+}
+
 export interface ResourceManifest {
   schemaVersion: 1;
   characterId: string;
@@ -29,4 +36,5 @@ export interface ResourceManifest {
   skeletonUrl: string;
   atlasUrl: string;
   textureUrls: string[];
+  spine: SpineSourceInfo;
 }
