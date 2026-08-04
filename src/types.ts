@@ -25,16 +25,23 @@ export interface SpineSourceInfo {
   recommendedRuntime: string;
 }
 
-export interface ResourceManifest {
-  schemaVersion: 1;
-  characterId: string;
-  name: string;
-  skin: string;
-  view: string;
-  sourceMetaUrl: string;
-  baseUrl: string;
-  skeletonUrl: string;
-  atlasUrl: string;
-  textureUrls: string[];
-  spine: SpineSourceInfo;
-}
+export const resourceManifestSchema = z.object({
+  schemaVersion: z.literal(1),
+  characterId: z.string().min(1),
+  name: z.string().min(1),
+  skin: z.string().min(1),
+  view: z.string().min(1),
+  sourceMetaUrl: z.string().url(),
+  baseUrl: z.string().url(),
+  skeletonUrl: z.string().url(),
+  atlasUrl: z.string().url(),
+  textureUrls: z.array(z.string().url()),
+  spine: z.object({
+    hash: z.string().nullable(),
+    version: z.string().nullable(),
+    majorMinor: z.string().nullable(),
+    recommendedRuntime: z.string(),
+  }),
+});
+
+export type ResourceManifest = z.infer<typeof resourceManifestSchema>;

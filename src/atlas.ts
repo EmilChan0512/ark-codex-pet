@@ -13,7 +13,12 @@ export function parseAtlasPageNames(atlasText: string): string[] {
   for (let index = 0; index < lines.length; index += 1) {
     const rawLine = lines[index] ?? "";
     const line = rawLine.trim();
-    if (!line || rawLine.startsWith(" ") || rawLine.startsWith("\t")) {
+    if (
+      !line ||
+      line.includes(":") ||
+      rawLine.startsWith(" ") ||
+      rawLine.startsWith("\t")
+    ) {
       continue;
     }
 

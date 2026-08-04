@@ -13,7 +13,7 @@ class BinaryCursor {
     if (this.offset >= this.bytes.length) {
       throw new Error("Unexpected end of Spine binary data");
     }
-    return this.bytes[this.offset++];
+    return this.bytes[this.offset++]!;
   }
 
   readVarint(optimizePositive = true): number {

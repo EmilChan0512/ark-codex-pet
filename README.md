@@ -25,7 +25,8 @@ PRTS meta.json
 - parse one or more texture pages from a Spine atlas
 - read hash and exporter version from the binary `.skel` header
 - recommend a versioned runtime key such as `spine-3.8`
-- emit a normalized manifest for the future baker
+- download a deterministic local Spine package
+- inspect Spine 3.8 animation names, durations, setup-pose bounds, and sampled bounds
 - run typecheck and unit tests in GitHub Actions
 
 ## Usage
@@ -38,6 +39,9 @@ pnpm inspect -- char_4058_pepe --list
 pnpm inspect -- char_4058_pepe --skin 默认 --view 基建
 pnpm inspect -- char_4058_pepe --skin 默认 --view 基建 \
   --output .cache/pepe.manifest.json
+pnpm download -- .cache/pepe.manifest.json --output .cache/pepe
+pnpm inspect-animations -- .cache/pepe \
+  --output .cache/pepe.animations.json
 ```
 
 A resolved manifest now includes:
@@ -53,7 +57,9 @@ A resolved manifest now includes:
 }
 ```
 
-The concrete version above is illustrative; the command reads the version from the selected model instead of assuming it.
+The concrete version above is illustrative; the command reads the version from the selected model instead of assuming it. The first installed adapter targets Spine 3.8, which is the exporter family used by Pepe's base model.
+
+`inspect-animations` samples each animation at 16 deterministic timestamps by default. Use `--samples` to trade speed for a denser union-bounds estimate. The command reports unsupported exporter families explicitly instead of attempting to parse them with an incompatible runtime.
 
 ## Why version detection comes first
 
@@ -65,12 +71,12 @@ Texture filenames are read from `.atlas`; the tool does not assume `${base}.png`
 
 ## Next milestone
 
-Add versioned browser runtime adapters and an `inspect-animations` command that reports:
+Add the browser renderer and deterministic frame capture layer:
 
-- animation names and durations
-- setup-pose bounds
-- sampled union bounds per animation
-- runtime compatibility failures with actionable diagnostics
+- load the local package in a controlled Chromium canvas
+- seek to the timestamps selected by the baker
+- capture transparent PNG frames
+- normalize union bounds and foot baseline
 - preview contact sheets
 
 The first adapter will be selected from the exporter version reported by the PRTS model manifest rather than hard-coded to the newest Pixi runtime.

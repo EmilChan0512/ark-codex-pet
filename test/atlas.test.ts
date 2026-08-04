@@ -24,4 +24,19 @@ effect/glow
 `;
     expect(parseAtlasPageNames(atlas)).toEqual(["pet.png", "pet-effects.png"]);
   });
+
+  it("does not treat unindented page metadata as texture pages", () => {
+    const atlas = `build_char.png
+size: 624,624
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+body
+  rotate: false
+  xy: 0, 0
+  size: 100, 100
+`;
+
+    expect(parseAtlasPageNames(atlas)).toEqual(["build_char.png"]);
+  });
 });
