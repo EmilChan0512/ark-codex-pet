@@ -12,6 +12,7 @@
     "download": "tsx src/cli.ts download",
     "inspect-animations": "tsx src/cli.ts inspect-animations",
     "preview": "tsx src/cli.ts preview",
+    "bake": "tsx src/cli.ts bake",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },

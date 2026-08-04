@@ -20,6 +20,8 @@ export interface PreviewOptions {
   height: number;
   padding: number;
   outputDirectory: string;
+  fitBounds?: Bounds;
+  baselineY?: number;
 }
 
 export interface PreviewResult {
@@ -153,6 +155,28 @@ export function transformForBounds(
   };
 }
 
+export function transformForBaseline(
+  bounds: Bounds,
+  width: number,
+  baselineY: number,
+  padding: number,
+): { scale: number; x: number; y: number } {
+  const availableWidth = width - padding * 2;
+  const availableHeight = baselineY - padding;
+  if (availableWidth <= 0 || availableHeight <= 0) {
+    throw new Error("Baseline and padding leave no drawable area");
+  }
+  if (bounds.width <= 0 || bounds.height <= 0) {
+    throw new Error("Preview bounds must have positive dimensions");
+  }
+  const scale = Math.min(availableWidth / bounds.width, availableHeight / bounds.height);
+  return {
+    scale,
+    x: width / 2 - (bounds.x + bounds.width / 2) * scale,
+    y: baselineY - (bounds.y + bounds.height) * scale,
+  };
+}
+
 function selectAnimation(
   animations: AnimationInspection[],
   name: string,
@@ -208,12 +232,11 @@ export async function renderAnimationPreview(
 
   const report = await inspectAnimations(spinePackage, Math.max(24, options.frames * 3));
   const animation = selectAnimation(report.animations, options.animation);
-  const transform = transformForBounds(
-    animation.sampledBounds!,
-    options.width,
-    options.height,
-    options.padding,
-  );
+  const fitBounds = options.fitBounds ?? animation.sampledBounds!;
+  const transform =
+    options.baselineY === undefined
+      ? transformForBounds(fitBounds, options.width, options.height, options.padding)
+      : transformForBaseline(fitBounds, options.width, options.baselineY, options.padding);
   const outputDirectory = path.resolve(options.outputDirectory);
   await mkdir(outputDirectory, { recursive: true });
 

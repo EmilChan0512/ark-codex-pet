@@ -4,6 +4,11 @@
   "skin": "默认",
   "view": "基建",
   "codexVersion": 1,
+  "pet": {
+    "id": "pepe",
+    "displayName": "佩佩",
+    "description": "Arknights operator Pepe"
+  },
   "normalization": {
     "cellWidth": 192,
     "cellHeight": 208,
@@ -12,14 +17,17 @@
     "padding": 10
   },
   "states": {
-    "idle": { "animation": "TO_BE_SELECTED", "frames": 8 },
-    "running-right": { "animation": "TO_BE_SELECTED", "frames": 8 },
+    "idle": { "animation": "Relax", "frames": 8 },
+    "running-right": { "animation": "Move", "frames": 8 },
     "running-left": { "deriveFrom": "running-right", "flipX": true },
-    "waving": { "animation": "TO_BE_SELECTED", "frames": 8 },
-    "jumping": { "animation": "TO_BE_SELECTED", "frames": 8 },
-    "failed": { "animation": "TO_BE_SELECTED", "frames": 8 },
-    "waiting": { "animation": "TO_BE_SELECTED", "frames": 8 },
-    "running": { "animation": "TO_BE_SELECTED", "frames": 8 },
-    "review": { "animation": "TO_BE_SELECTED", "frames": 8 }
+    "waving": { "animation": "Interact", "frames": 8 },
+    "jumping": {
+      "deriveFrom": "idle",
+      "offsetY": [0, -6, -12, -18, -18, -12, -6, 0]
+    },
+    "failed": { "animation": "Sleep", "frames": 8 },
+    "waiting": { "animation": "Sit", "frames": 8 },
+    "running": { "animation": "Move", "frames": 8 },
+    "review": { "animation": "Interact", "frames": 8 }
   }
 }

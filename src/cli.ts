@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { Command } from "commander";
+import { bakeCodexV1 } from "./bake.js";
 import { downloadManifestAssets } from "./download.js";
 import { inspectAnimations } from "./inspect-animations.js";
 import { loadLocalSpinePackage } from "./local-package.js";
@@ -139,6 +140,26 @@ program
         padding: integers.padding,
         outputDirectory: options.output,
       });
+      await emitJson(result);
+    },
+  );
+
+program
+  .command("bake")
+  .argument("<package-directory>", "directory produced by download")
+  .requiredOption("--config <file>", "Codex state mapping JSON")
+  .requiredOption("-o, --output <directory>", "Codex pet output directory")
+  .action(
+    async (
+      packageDirectory: string,
+      options: { config: string; output: string },
+    ) => {
+      const spinePackage = await loadLocalSpinePackage(packageDirectory);
+      const result = await bakeCodexV1(
+        spinePackage,
+        options.config,
+        options.output,
+      );
       await emitJson(result);
     },
   );

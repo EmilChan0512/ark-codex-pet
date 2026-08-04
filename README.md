@@ -45,6 +45,9 @@ pnpm inspect-animations -- .cache/pepe \
 pnpm exec playwright install chromium
 pnpm preview -- .cache/pepe --animation Move --frames 8 \
   --width 512 --height 512 --output .cache/preview-move
+pnpm bake -- .cache/pepe \
+  --config examples/char_4058_pepe.codex.json \
+  --output dist/pepe
 ```
 
 A resolved manifest now includes:
@@ -66,6 +69,20 @@ The concrete version above is illustrative; the command reads the version from t
 
 `preview` launches a controlled headless Chromium instance, seeks the selected Spine animation to deterministic timestamps, and writes transparent PNG frames plus `contact-sheet.png`. Some PRTS packages declare a larger Atlas page than the PNG currently served by the CDN (Pepe declares 624×624 but receives 416×416); the preview server detects this mismatch and normalizes the texture to the Atlas dimensions in memory without modifying the downloaded source package.
 
+`bake` renders only the unique mapped animations, applies one shared scale and bottom-center baseline, derives transformed states such as mirrored left-running and synthesized jumping, and emits a Codex V1 package:
+
+```text
+dist/pepe/
+├── pet.json
+├── spritesheet.webp       # 1536×1872, transparent, lossless
+├── mapping.json
+└── qa/
+    ├── contact-sheet.png
+    ├── validation.json
+    ├── animations/
+    └── states/
+```
+
 ## Why version detection comes first
 
 Spine binary data is runtime-version-sensitive. The browser renderer must use a runtime compatible with the model's exporter version. The project therefore routes a model through a versioned adapter before trying to load animations.
@@ -74,15 +91,11 @@ The conversion is treated as an offline animation-baking pipeline, not as a Pixi
 
 Texture filenames are read from `.atlas`; the tool does not assume `${base}.png`, because an atlas can contain multiple texture pages.
 
-## Next milestone
+## Current Codex mapping
 
-Build the Codex compositor on top of the verified browser renderer:
+The Pepe example now maps the six available source animations to all nine Codex rows. `running-left` is mirrored from `running-right`; because the source package has no jump animation, `jumping` is derived from the idle frames with a deterministic vertical arc. The mapping file remains editable so another skin or character can choose different semantics.
 
-- normalize union bounds and foot baseline
-- map the six source animations to the nine Codex states
-- mirror the left-running row from the right-running row
-- compose the fixed 8×9 WebP sheet and `pet.json`
-- preview contact sheets
+The generated QA report verifies dimensions, alpha support, row order, mapping, shared source bounds, and a SHA-256 digest of the final WebP.
 
 The first adapter will be selected from the exporter version reported by the PRTS model manifest rather than hard-coded to the newest Pixi runtime.
 
