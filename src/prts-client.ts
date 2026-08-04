@@ -1,4 +1,5 @@
 import { parseAtlasPageNames } from "./atlas.js";
+import { readSpineBinaryHeader, recommendRuntime } from "./spine-binary.js";
 import {
   prtsMetaSchema,
   type PrtsMeta,
@@ -8,14 +9,22 @@ import {
 
 const PRTS_ROOT = "https://torappu.prts.wiki/assets/char_spine/";
 
-async function fetchText(url: string): Promise<string> {
+async function fetchResponse(url: string): Promise<Response> {
   const response = await fetch(url, {
     headers: { "user-agent": "ark-codex-pet/0.1" },
   });
   if (!response.ok) {
     throw new Error(`Request failed (${response.status}) for ${url}`);
   }
-  return response.text();
+  return response;
+}
+
+async function fetchText(url: string): Promise<string> {
+  return (await fetchResponse(url)).text();
+}
+
+async function fetchBytes(url: string): Promise<Uint8Array> {
+  return new Uint8Array(await (await fetchResponse(url)).arrayBuffer());
 }
 
 export function getMetaUrl(characterId: string): string {
@@ -76,12 +85,18 @@ export async function resolveManifest(
   const selected = selectVariant(meta, skin, view);
   const baseUrl = new URL(selected.file, meta.prefix).href;
   const atlasUrl = `${baseUrl}.atlas`;
-  const atlasText = await fetchText(atlasUrl);
+  const skeletonUrl = `${baseUrl}.skel`;
+  const [atlasText, skeletonBytes] = await Promise.all([
+    fetchText(atlasUrl),
+    fetchBytes(skeletonUrl),
+  ]);
   const pageNames = parseAtlasPageNames(atlasText);
 
   if (pageNames.length === 0) {
     throw new Error(`No texture pages found in atlas: ${atlasUrl}`);
   }
+
+  const spine = readSpineBinaryHeader(skeletonBytes);
 
   return {
     schemaVersion: 1,
@@ -91,8 +106,14 @@ export async function resolveManifest(
     view: selected.view,
     sourceMetaUrl,
     baseUrl,
-    skeletonUrl: `${baseUrl}.skel`,
+    skeletonUrl,
     atlasUrl,
     textureUrls: pageNames.map((name) => new URL(name, atlasUrl).href),
+    spine: {
+      hash: spine.hash,
+      version: spine.version,
+      majorMinor: spine.majorMinor,
+      recommendedRuntime: recommendRuntime(spine.version),
+    },
   };
 }
