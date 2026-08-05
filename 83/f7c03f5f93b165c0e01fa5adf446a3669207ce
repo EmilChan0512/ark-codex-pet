@@ -1,0 +1,20 @@
+README.md
+  h_83d6990e2a4e4b 53-62
+README_zh.md
+  h_83d6990e2a4e4b 1-115
+USEGUIDE_zh.md
+  h_83d6990e2a4e4b 1-42
+src/render-preview.ts
+  h_83d6990e2a4e4b 245-249
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "83f7c03f5f93b165c0e01fa5adf446a3669207ce",
+  "prompts": {},
+  "humans": {
+    "h_83d6990e2a4e4b": {
+      "author": "chenyi.266 <chenyi.266@jd.com>"
+    }
+  }
+}
