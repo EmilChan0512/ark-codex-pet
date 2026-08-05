@@ -242,7 +242,11 @@ export async function renderAnimationPreview(
 
   const server = await createPreviewServer(spinePackage);
   const port = await listen(server);
-  const browser = await chromium.launch({ headless: true });
+  const launchOptions: { headless: boolean; channel?: string } = { headless: true };
+  if (process.env.ARK_PET_BROWSER === "chrome") {
+    launchOptions.channel = "chrome";
+  }
+  const browser = await chromium.launch(launchOptions);
   const framePaths: string[] = [];
 
   try {

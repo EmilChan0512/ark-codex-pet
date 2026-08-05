@@ -50,6 +50,16 @@ pnpm bake -- .cache/pepe \
   --output dist/pepe
 ```
 
+If you already have Google Chrome installed locally, you can skip `playwright install` and use the `:chrome` command variants to drive the system Chrome directly:
+
+```bash
+pnpm preview:chrome -- .cache/pepe --animation Move --frames 8 \
+  --width 512 --height 512 --output .cache/preview-move
+pnpm bake:chrome -- .cache/pepe \
+  --config examples/char_4058_pepe.codex.json \
+  --output dist/pepe
+```
+
 A resolved manifest now includes:
 
 ```json
