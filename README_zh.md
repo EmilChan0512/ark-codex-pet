@@ -122,7 +122,7 @@ Spine 二进制数据对运行时版本敏感。浏览器渲染器必须使用�
 
 ## Bake 配置 JSON 完整说明
 
-bake 命令需要一个「Codex 状态映射配置 JSON」作为 `--config` 参数。该配置使用 Zod schema 在 [bake.ts#L58-L85](file:///Users/chenyi.266/Practice/ark-codex-pet/src/bake.ts#L58-L85) 中进行严格校验。以下是每个字段的详细含义：
+bake 命令需要一个「Codex 状态映射配置 JSON」作为 `--config` 参数。该配置使用 Zod schema 在 [`src/bake.ts` L58–L85](src/bake.ts#L58-L85) 中进行严格校验。以下是每个字段的详细含义：
 
 ### 顶层字段
 

@@ -121,7 +121,7 @@ This project supports two versions of the Codex pet specification, switchable vi
 
 ## Bake config JSON — complete reference
 
-The `bake` command accepts a "Codex state mapping config JSON" via the `--config` option. This config is strictly validated against a Zod schema in [bake.ts#L58-L85](file:///Users/chenyi.266/Practice/ark-codex-pet/src/bake.ts#L58-L85). Below is a detailed breakdown of every field.
+The `bake` command accepts a "Codex state mapping config JSON" via the `--config` option. This config is strictly validated against a Zod schema in [`src/bake.ts` L58–L85](src/bake.ts#L58-L85). Below is a detailed breakdown of every field.
 
 ### Top-level fields
 
