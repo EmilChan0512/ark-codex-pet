@@ -31,6 +31,49 @@ pnpm generate:chrome 伊芙利特 --skin 默认 --view 基建 --output dist/ifri
 
 如果本地还没有数据库文件，命令会直接报错并提示先执行 `pnpm sync-db`。
 
+### 2.1 怎么找 skin / view 名称
+
+如果你想生成的不是默认皮肤，而是某个时装，请按下面方式查：
+
+1. 先查角色，`pnpm find` 的结果里会直接列出该角色可用的 `variants`，以及每个变体对应的可复制命令：
+
+```bash
+pnpm find 白金
+```
+
+如果你需要机器可读的 JSON 结果，可以使用：
+
+```bash
+pnpm find 白金 --json
+```
+
+2. 直接从结果里复制：
+
+- `skin`
+- `view`
+
+例如：
+
+```bash
+pnpm generate:chrome 白金 --skin 灿阳朝露 SD05 --view 正面
+```
+
+3. 如果你还想手动核对，再打开本地数据库文件：
+
+```text
+database/prts-characters.json
+```
+
+4. 搜索角色名或 `characterId`，在对应条目的 `variants` 数组里查看：
+
+```json
+{
+  "skin": "灿阳朝露 SD05",
+  "view": "正面",
+  "file": "char_204_platnm_summer_3/front/char_204_platnm_summer_3"
+}
+```
+
 也可以直接使用一键脚本：
 
 ```bash

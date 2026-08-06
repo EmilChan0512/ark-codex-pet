@@ -9,6 +9,8 @@
   },
   "scripts": {
     "sync-db": "tsx src/cli.ts sync-db",
+    "search": "tsx src/cli.ts search",
+    "find": "tsx src/cli.ts search",
     "characters": "tsx src/cli.ts characters",
     "inspect": "tsx src/cli.ts inspect",
     "download": "tsx src/cli.ts download",

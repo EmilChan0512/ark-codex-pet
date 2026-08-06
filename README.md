@@ -1,11 +1,26 @@
 # ark-codex-pet
 
-> First run: `pnpm sync-db`
-> Then build: `pnpm generate:chrome Pepe --skin 默认 --view 基建`
+## Quick Start
+
+```bash
+pnpm sync-db
+```
+
+```bash
+pnpm generate:chrome Pepe --skin 默认 --view 基建
+```
+
+Requires Node.js 20+ and pnpm 9+.
+
+> If local Chrome is unavailable, use `pnpm generate`.
+> 🔎 Search roles with `pnpm find Pepe`.
+> 🎨 To find skin names, run `pnpm find <role>` first. The result now lists available `skin` / `view` values and ready-to-copy generate commands.
+> 🧾 If you need JSON output, run `pnpm find Pepe --json`.
 
 Convert Arknights Spine assets described by PRTS metadata into deterministic sprite sheets for Codex custom pets.
 
-> Early prototype: build a stable, version-aware resource manifest before deterministic Spine frame baking.
+> Production-ready workflow for role-name lookup, automatic PRTS asset resolution, Codex config generation, and final pet package output.
+> Successful `generate` runs also write a readable config copy to `examples/auto/<role-name>.codex.json` for manual edits.
 
 ## Pipeline
 
@@ -35,6 +50,38 @@ PRTS meta.json
 ## Usage
 
 Requires Node.js 20+ and pnpm 9+.
+
+### How to find skin names
+
+Many users want a non-default skin instead of the base model. The simplest workflow is:
+
+1. Search the role. `pnpm find` now returns the role's available `variants` and ready-to-copy `generate` / `generate:chrome` commands:
+
+```bash
+pnpm find Platina
+```
+
+2. Copy the `skin` and `view` values directly into `generate`:
+
+```bash
+pnpm generate:chrome Platina --skin 灿阳朝露 SD05 --view 正面
+```
+
+3. If you want to double-check manually, open the local database file:
+
+```text
+database/prts-characters.json
+```
+
+4. Search for the role name or `characterId`, then inspect the `variants` array:
+
+```json
+{
+  "skin": "灿阳朝露 SD05",
+  "view": "正面",
+  "file": "char_204_platnm_summer_3/front/char_204_platnm_summer_3"
+}
+```
 
 ```bash
 pnpm install

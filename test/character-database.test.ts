@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   buildLookupKeys,
+  findCharacterRecords,
   parseCharacterPageInfo,
+  suggestCharacterRecords,
 } from "../src/character-database.js";
 
 describe("character database helpers", () => {
@@ -37,5 +39,27 @@ describe("character database helpers", () => {
       "アーミヤ",
       "char_002_amiya2",
     ]);
+  });
+
+  it("matches 特蕾西娅 when the stored role name is 魔王", () => {
+    const database = {
+      schemaVersion: 1 as const,
+      generatedAt: new Date().toISOString(),
+      source: "prts.wiki" as const,
+      characters: [
+        {
+          title: "魔王",
+          name: "魔王",
+          characterId: "char_999_devil",
+          sourcePageUrl: "https://example.com/devil",
+          metaUrl: "https://example.com/devil/meta.json",
+          hasMeta: true,
+          variants: [],
+        },
+      ],
+    };
+
+    expect(findCharacterRecords(database, "特蕾西娅")).toHaveLength(1);
+    expect(suggestCharacterRecords(database, "特蕾西娅")).toHaveLength(1);
   });
 });

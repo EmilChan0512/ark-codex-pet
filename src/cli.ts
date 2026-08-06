@@ -10,11 +10,20 @@ import {
   suggestCharacterRecords,
   syncCharacterDatabase,
 } from "./character-database.js";
+import {
+  formatCharacterSearchTextResult,
+  summarizeCharacterSearchEntry,
+} from "./character-search.js";
 import { downloadManifestAssets } from "./download.js";
+import {
+  buildCharacterAmbiguousMessage,
+  buildCharacterNotFoundMessage,
+} from "./generate-helpers.js";
 import { inspectAnimations } from "./inspect-animations.js";
 import { loadLocalSpinePackage } from "./local-package.js";
 import { fetchPrtsMeta, listVariants, resolveManifest } from "./prts-client.js";
 import { renderAnimationPreview } from "./render-preview.js";
+import { formatStepLabel, paintForStream } from "./terminal-ui.js";
 import { resourceManifestSchema } from "./types.js";
 
 const program = new Command()
@@ -23,6 +32,7 @@ const program = new Command()
   .showHelpAfterError();
 
 const defaultDatabasePath = path.resolve("database/prts-characters.json");
+const progressTotalSteps = 6;
 
 async function emitJson(result: unknown, outputFile?: string): Promise<void> {
   const json = `${JSON.stringify(result, null, 2)}\n`;
@@ -30,10 +40,35 @@ async function emitJson(result: unknown, outputFile?: string): Promise<void> {
     const output = path.resolve(outputFile);
     await mkdir(path.dirname(output), { recursive: true });
     await writeFile(output, json, "utf8");
-    process.stderr.write(`Wrote ${output}\n`);
+    process.stderr.write(
+      `${paintForStream(process.stderr, "Wrote", ["bold", "green"])} ${paintForStream(process.stderr, output, "blue")}\n`,
+    );
   } else {
     process.stdout.write(json);
   }
+}
+
+function logGenerateStep(step: number, title: string, detail?: string): void {
+  const label = formatStepLabel(step, progressTotalSteps, process.stderr);
+  const heading = paintForStream(process.stderr, title, ["bold", "cyan"]);
+  const suffix = detail
+    ? ` ${paintForStream(process.stderr, detail, "dim")}`
+    : "";
+  process.stderr.write(`${label} ${heading}${suffix}\n`);
+}
+
+function logGenerateSuccess(title: string, detail?: string): void {
+  const heading = paintForStream(process.stderr, title, ["bold", "green"]);
+  const suffix = detail
+    ? ` ${paintForStream(process.stderr, detail, "dim")}`
+    : "";
+  process.stderr.write(`${heading}${suffix}\n`);
+}
+
+function logGenerateNext(detail: string): void {
+  process.stderr.write(
+    `${paintForStream(process.stderr, "Next", ["bold", "yellow"])} ${paintForStream(process.stderr, detail, "blue")}\n`,
+  );
 }
 
 async function pathExists(targetPath: string): Promise<boolean> {
@@ -73,6 +108,50 @@ function sanitizeSegment(value: string): string {
   return normalized || "default";
 }
 
+async function emitCharacterQueryResult(
+  query: string | undefined,
+  databaseFile: string,
+  availableOnly = true,
+): Promise<{
+  databasePath: string;
+  total: number;
+  characters: ReturnType<typeof summarizeCharacterSearchEntry>[];
+}> {
+  const databasePath = await requireCharacterDatabase(databaseFile);
+  const database = await loadCharacterDatabase(databasePath);
+  const key = query?.trim();
+  const matches = key
+    ? suggestCharacterRecords(database, key, database.characters.length)
+    : database.characters;
+  const characters = availableOnly
+    ? matches.filter((entry) => entry.hasMeta)
+    : matches;
+
+  const result = {
+    databasePath,
+    total: characters.length,
+    characters: characters
+      .filter((entry) => entry.hasMeta)
+      .map((entry) => summarizeCharacterSearchEntry(entry)),
+  };
+
+  return result;
+}
+
+async function emitCharacterQueryJson(
+  query: string | undefined,
+  databaseFile: string,
+  availableOnly = true,
+  output?: string,
+): Promise<void> {
+  const result = await emitCharacterQueryResult(query, databaseFile, availableOnly);
+
+  await emitJson(
+    result,
+    output,
+  );
+}
+
 program
   .command("sync-db")
   .option(
@@ -98,33 +177,34 @@ program
       database: string;
       output?: string;
     }) => {
-      const databasePath = await requireCharacterDatabase(options.database);
-      const database = await loadCharacterDatabase(databasePath);
-      const key = options.query?.trim();
-      const matches = key
-        ? database.characters.filter((entry) =>
-            suggestCharacterRecords(database, key, database.characters.length).includes(entry),
-          )
-        : database.characters;
-      const filtered = (options.availableOnly ?? true)
-        ? matches.filter((entry) => entry.hasMeta)
-        : matches;
-
-      await emitJson(
-        {
-          databasePath,
-          total: filtered.length,
-          characters: filtered.map((entry) => ({
-            name: entry.name,
-            enName: entry.enName,
-            jpName: entry.jpName,
-            title: entry.title,
-            characterId: entry.characterId,
-            hasMeta: entry.hasMeta,
-            variantCount: entry.variants.length,
-          })),
-        },
+      await emitCharacterQueryJson(
+        options.query,
+        options.database,
+        options.availableOnly ?? true,
         options.output,
+      );
+    },
+  );
+
+program
+  .command("search")
+  .argument("<query>", "role name, alias, or character id")
+  .option("--database <file>", "local character database file", defaultDatabasePath)
+  .option("--json", "emit JSON instead of plain text", false)
+  .option("-o, --output <file>", "write JSON result to a file")
+  .action(
+    async (
+      query: string,
+      options: { database: string; json?: boolean; output?: string },
+    ) => {
+      const result = await emitCharacterQueryResult(query, options.database, true);
+      if (options.output || options.json) {
+        await emitJson(result, options.output);
+        return;
+      }
+
+      process.stdout.write(
+        formatCharacterSearchTextResult(result.databasePath, result.characters),
       );
     },
   );
@@ -300,27 +380,23 @@ program
         output?: string;
       },
     ) => {
+      logGenerateStep(1, "Resolve character", `${characterName} | skin=${options.skin} | view=${options.view}`);
       const databasePath = await requireCharacterDatabase(options.database);
       const database = await loadCharacterDatabase(databasePath);
       const matches = findCharacterRecords(database, characterName);
 
       if (matches.length === 0) {
-        const suggestions = suggestCharacterRecords(database, characterName)
-          .map((entry) => `${entry.name} (${entry.characterId})`)
-          .join(", ");
         throw new Error(
-          suggestions
-            ? `Character not found: ${characterName}. Suggestions: ${suggestions}`
-            : `Character not found: ${characterName}`,
+          buildCharacterNotFoundMessage(
+            characterName,
+            suggestCharacterRecords(database, characterName, 5),
+            databasePath,
+          ),
         );
       }
 
       if (matches.length > 1) {
-        throw new Error(
-          `Character query is ambiguous: ${matches
-            .map((entry) => `${entry.name} (${entry.characterId})`)
-            .join(", ")}`,
-        );
+        throw new Error(buildCharacterAmbiguousMessage(matches.slice(0, 5), databasePath));
       }
 
       const record = matches[0]!;
@@ -339,17 +415,29 @@ program
       const baselineY = parseIntegerOption(options.baselineY, "--baselineY", 1, 207);
       const padding = parseIntegerOption(options.padding, "--padding", 0, 95);
 
-      const manifest = await resolveManifest(record.characterId, options.skin, options.view);
+      logGenerateStep(
+        2,
+        "Resolve PRTS manifest",
+        `${record.characterId} | ${options.skin} | ${options.view}`,
+      );
+      const manifest = await resolveManifest(
+        record.characterId,
+        options.skin,
+        options.view,
+      );
       const variantKey = `${sanitizeSegment(manifest.skin)}-${sanitizeSegment(manifest.view)}`;
       const cacheDirectory = path.resolve(options.cacheRoot, manifest.characterId, variantKey);
       const packageDirectory = path.join(cacheDirectory, "package");
 
+      logGenerateStep(3, "Download assets", packageDirectory);
       await mkdir(cacheDirectory, { recursive: true });
       await downloadManifestAssets(manifest, packageDirectory);
 
+      logGenerateStep(4, "Inspect animations", packageDirectory);
       process.env.ARK_PET_BROWSER = "chrome";
       const spinePackage = await loadLocalSpinePackage(packageDirectory);
       const report = await inspectAnimations(spinePackage);
+      logGenerateStep(5, "Write auto config", cacheDirectory);
       const autoConfig = createAutomaticBakeConfig(manifest, report, {
         codexVersion,
         baselineY,
@@ -363,11 +451,23 @@ program
         options.configOutput ?? path.join(cacheDirectory, "auto.codex.json"),
       );
       await writeFile(configPath, `${JSON.stringify(autoConfig.config, null, 2)}\n`, "utf8");
+      const examplesAutoPath = path.resolve(
+        "examples/auto",
+        `${sanitizeSegment(record.title)}.codex.json`,
+      );
+      await mkdir(path.dirname(examplesAutoPath), { recursive: true });
+      await writeFile(
+        examplesAutoPath,
+        `${JSON.stringify(autoConfig.config, null, 2)}\n`,
+        "utf8",
+      );
 
       const outputDirectory = path.resolve(
         options.output ?? path.join("dist", autoConfig.config.pet.id),
       );
+      logGenerateStep(6, "Bake Codex assets", outputDirectory);
       const bakeResult = await bakeCodexV1(spinePackage, configPath, outputDirectory);
+      const codexTargetPath = `~/.codex/pets/${autoConfig.config.pet.id}`;
 
       await emitJson({
         databasePath,
@@ -379,21 +479,37 @@ program
           skin: manifest.skin,
           view: manifest.view,
         },
+        variantSelection: {
+          requestedSkin: options.skin,
+          requestedView: options.view,
+          resolvedSkin: manifest.skin,
+          resolvedView: manifest.view,
+          autoSelectedReason: null,
+        },
         autoConfig: {
           configPath,
+          examplesAutoPath,
           warnings: autoConfig.warnings,
           mappings: summarizeAutoConfigMappings(autoConfig.config),
         },
         animationCount: report.animations.length,
         packageDirectory,
         outputDirectory,
+        codexTargetPath,
         bake: bakeResult,
       });
+      logGenerateSuccess(
+        "Done",
+        `${record.name} | ${manifest.skin} | ${manifest.view} -> ${outputDirectory}`,
+      );
+      logGenerateNext(`copy pet.json and spritesheet.webp to ${codexTargetPath}`);
     },
   );
 
 program.parseAsync(normalizeMultiWordOptionValues(process.argv)).catch((error: unknown) => {
   const message = error instanceof Error ? error.message : String(error);
-  process.stderr.write(`ark-pet: ${message}\n`);
+  process.stderr.write(
+    `${paintForStream(process.stderr, "ark-pet:", ["bold", "red"])} ${message}\n`,
+  );
   process.exitCode = 1;
 });

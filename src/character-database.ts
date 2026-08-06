@@ -6,6 +6,7 @@ import {
   type CharacterDatabaseEntry,
   type CharacterVariantRecord,
 } from "./types.js";
+import { characterQueryAliasGroups } from "./character-aliases.js";
 import { fetchPrtsMeta, getMetaUrl, listVariants } from "./prts-client.js";
 
 const PRTS_API_ROOT = "https://m.prts.wiki/api.php";
@@ -40,6 +41,20 @@ export interface CharacterPageInfo {
 
 function normalizeKey(value: string): string {
   return value.trim().toLocaleLowerCase("en-US");
+}
+
+function expandCharacterQueryAliases(query: string): string[] {
+  const key = normalizeKey(query);
+  const expanded = new Set([key]);
+
+  for (const group of characterQueryAliasGroups) {
+    const normalizedGroup = group.map(normalizeKey);
+    if (normalizedGroup.includes(key)) {
+      normalizedGroup.forEach((alias) => expanded.add(alias));
+    }
+  }
+
+  return [...expanded];
 }
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -256,8 +271,10 @@ export function findCharacterRecords(
   database: CharacterDatabase,
   query: string,
 ): CharacterDatabaseEntry[] {
-  const key = normalizeKey(query);
-  return database.characters.filter((entry) => buildLookupKeys(entry).includes(key));
+  const keys = expandCharacterQueryAliases(query);
+  return database.characters.filter((entry) =>
+    keys.some((key) => buildLookupKeys(entry).includes(key)),
+  );
 }
 
 export function suggestCharacterRecords(
@@ -265,8 +282,12 @@ export function suggestCharacterRecords(
   query: string,
   limit = 10,
 ): CharacterDatabaseEntry[] {
-  const key = normalizeKey(query);
+  const keys = expandCharacterQueryAliases(query);
   return database.characters
-    .filter((entry) => buildLookupKeys(entry).some((candidate) => candidate.includes(key)))
+    .filter((entry) =>
+      buildLookupKeys(entry).some((candidate) =>
+        keys.some((key) => candidate.includes(key)),
+      ),
+    )
     .slice(0, limit);
 }

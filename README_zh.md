@@ -1,15 +1,27 @@
 # ark-codex-pet
 
-node 20+ pnpm 7+
+## 快速开始
 
-> pnpm install
-> 先执行：`pnpm sync-db`（可选）
-> 再生成：`pnpm generate:chrome 佩佩 --skin 默认 --view 基建` (若本机没有 Chrome，请改用 pnpm generate)
-> 将生成的产物上传到 Codex。产物目录：`dist/pepe`，将目录下`pet.json`，`spritesheet.webp`复制到 `~/.codex/pets/pepe`。
+```bash
+pnpm sync-db
+```
+
+```bash
+pnpm generate:chrome 佩佩 --skin 默认 --view 基建
+```
+
+需要 Node.js 20+ 和 pnpm 9+。
+
+> 若本机没有 Chrome，请改用 `pnpm generate`。
+> 🔎 查角色可直接用 `pnpm find 佩佩`。
+> 🎨 查皮肤名优先用 `pnpm find 角色名`，结果里会直接列出可用的 `skin` / `view` 和可复制的生成命令。
+> 🧾 若需要 JSON 输出，可改用 `pnpm find 佩佩 --json`。
+> 📦 默认产物目录是 `dist/pepe`，将其中的 `pet.json` 和 `spritesheet.webp` 复制到 `~/.codex/pets/pepe`。
 
 将 PRTS 元数据描述的《明日方舟》Spine 资源转换为可用于 Codex 自定义宠物的确定性精灵图集。
 
-> 早期原型：在进行确定性 Spine 帧烘焙之前，先构建一个稳定且能识别版本的资源清单。
+> 已可用于按角色名检索、自动拉取 PRTS 资源、生成 Codex 宠物配置，并输出最终可用的宠物产物。
+> `generate` 成功后会额外写出一份可读配置到 `examples/auto/<角色名>.codex.json`，方便后续手改。
 
 ## 处理流程
 
@@ -39,6 +51,49 @@ PRTS meta.json
 ## 使用方法
 
 需要 Node.js 20+ 和 pnpm 9+。
+
+### 如何找到皮肤名称
+
+很多用户真正想生成的不是默认皮肤，而是某个时装或特殊视图。现在最直接的查找方式如下：
+
+1. 先查角色，`pnpm find` 的结果里会直接列出该角色可用的 `variants`，以及每个变体对应的可复制 `generate` / `generate:chrome` 命令：
+
+```bash
+pnpm find 白金
+```
+
+2. 结果里的每一项都会包含：
+
+- `skin`
+- `view`
+- `file`
+
+直接把 `skin` 和 `view` 原样复制到生成命令里即可：
+
+```bash
+pnpm generate:chrome 白金 --skin 灿阳朝露 SD05 --view 正面
+```
+
+3. 如果你还想手动核对，再打开本地数据库文件：
+
+```text
+database/prts-characters.json
+```
+
+4. 在该文件里搜索角色名或 `characterId`，查看该角色条目下的 `variants` 数组：
+
+```json
+{
+  "skin": "灿阳朝露 SD05",
+  "view": "正面",
+  "file": "char_204_platnm_summer_3/front/char_204_platnm_summer_3"
+}
+```
+
+其中：
+
+- `skin` 就是你传给 `--skin` 的值
+- `view` 就是你传给 `--view` 的值
 
 ```bash
 pnpm install

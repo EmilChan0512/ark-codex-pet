@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { normalizeMultiWordOptionValues } from "../src/argv-normalize.js";
+import {
+  normalizeMultiWordOptionValues,
+  unwrapShellQuotedValue,
+} from "../src/argv-normalize.js";
 
 describe("normalizeMultiWordOptionValues", () => {
   it("merges unquoted skin and view values containing spaces", () => {
@@ -52,6 +55,32 @@ describe("normalizeMultiWordOptionValues", () => {
       "正面",
       "--output",
       "dist/platnm",
+    ]);
+  });
+
+  it("unwraps shell-escaped quoted values pasted from JSON output", () => {
+    expect(unwrapShellQuotedValue('\\"白金\\"')).toBe("白金");
+    expect(
+      normalizeMultiWordOptionValues([
+        "node",
+        "src/cli.ts",
+        "generate",
+        '\\"白金\\"',
+        "--skin",
+        '\\"灿阳朝露',
+        'SD05\\"',
+        "--view",
+        '\\"背面\\"',
+      ]),
+    ).toEqual([
+      "node",
+      "src/cli.ts",
+      "generate",
+      "白金",
+      "--skin",
+      "灿阳朝露 SD05",
+      "--view",
+      "背面",
     ]);
   });
 });
