@@ -1,5 +1,8 @@
 # ark-codex-pet
 
+> First run: `pnpm sync-db`
+> Then build: `pnpm generate:chrome Pepe --skin 默认 --view 基建`
+
 Convert Arknights Spine assets described by PRTS metadata into deterministic sprite sheets for Codex custom pets.
 
 > Early prototype: build a stable, version-aware resource manifest before deterministic Spine frame baking.
@@ -35,6 +38,9 @@ Requires Node.js 20+ and pnpm 9+.
 
 ```bash
 pnpm install
+pnpm sync-db
+pnpm characters --query Pepe
+pnpm generate:chrome Pepe --skin 默认 --view 基建
 pnpm inspect -- char_4058_pepe --list
 pnpm inspect -- char_4058_pepe --skin 默认 --view 基建
 pnpm inspect -- char_4058_pepe --skin 默认 --view 基建 \
@@ -59,6 +65,22 @@ pnpm bake:chrome -- .cache/pepe \
   --config examples/char_4058_pepe.codex.json \
   --output dist/pepe
 ```
+
+## Local character database and one-shot generation
+
+The project now supports a local PRTS character database at `database/prts-characters.json`.
+It stores role names, `char_xxx` ids, and the available `skin/view/file` mappings resolved from PRTS metadata without downloading full Spine packages.
+
+```bash
+pnpm sync-db
+pnpm characters --query Ifrit
+pnpm generate:chrome Ifrit --skin 默认 --view 基建
+./scripts/generate-codex.sh Pepe 默认 基建
+scripts\generate-codex.bat Pepe 默认 基建
+```
+
+`generate` is a new aggregate command that chains database lookup, manifest resolution, resource download, animation inspection, automatic bake-config generation, and final Codex baking in one call.
+It reads the local `database/prts-characters.json` file as-is and does not refresh it automatically; run `pnpm sync-db` manually when you want to update the JSON.
 
 A resolved manifest now includes:
 

@@ -1,5 +1,12 @@
 # ark-codex-pet
 
+node 20+ pnpm 7+
+
+> pnpm install
+> 先执行：`pnpm sync-db`（可选）
+> 再生成：`pnpm generate:chrome 佩佩 --skin 默认 --view 基建` (若本机没有 Chrome，请改用 pnpm generate)
+> 将生成的产物上传到 Codex。产物目录：`dist/pepe`，将目录下`pet.json`，`spritesheet.webp`复制到 `~/.codex/pets/pepe`。
+
 将 PRTS 元数据描述的《明日方舟》Spine 资源转换为可用于 Codex 自定义宠物的确定性精灵图集。
 
 > 早期原型：在进行确定性 Spine 帧烘焙之前，先构建一个稳定且能识别版本的资源清单。
@@ -35,6 +42,9 @@ PRTS meta.json
 
 ```bash
 pnpm install
+pnpm sync-db
+pnpm characters --query 佩佩
+pnpm generate:chrome 佩佩 --skin 默认 --view 基建
 pnpm inspect -- char_4058_pepe --list
 pnpm inspect -- char_4058_pepe --skin 默认 --view 基建
 pnpm inspect -- char_4058_pepe --skin 默认 --view 基建 \
@@ -60,6 +70,55 @@ pnpm bake:chrome -- .cache/pepe \
   --output dist/pepe
 ```
 
+### 角色数据库与一键生成
+
+新增的本地数据库会把 PRTS 干员页面中的角色名、`char_xxx` 标识，以及对应 `meta.json` 里可用的 `skin/view/file` 映射保存到本地 `database/prts-characters.json`。它只抓取元信息，不会下载整套 Spine 包。
+
+```bash
+pnpm sync-db
+pnpm characters --query 伊芙利特
+pnpm generate:chrome 伊芙利特 --skin 默认 --view 基建
+pnpm generate:chrome 佩佩 --skin 默认 --view 基建 --output dist/pepe
+```
+
+`generate` 是新的聚合命令，会自动串起以下步骤：
+
+```text
+角色名 -> 本地数据库匹配 -> resolve manifest -> download
+       -> inspect-animations -> 自动生成 bake config -> bake
+```
+
+默认生成行为：
+
+- `generate` / `characters` 只读取本地 `database/prts-characters.json`
+- 数据库不会在每次执行时自动更新；需要更新时手动执行一次 `pnpm sync-db`
+- 如果数据库文件不存在，命令会直接提示先运行 `pnpm sync-db`
+- `skin` 默认值为 `默认`
+- `view` 默认值为 `基建`
+- `codexVersion` 默认值为 `2`
+- `generate` 默认强制走本地 Google Chrome 通道，不要求用户下载 Playwright 自带浏览器
+- 自动生成的 bake 配置会写入 `.cache/generated/<characterId>/<skin-view>/auto.codex.json`
+- 最终输出目录默认是 `dist/<pet-id>`
+
+自动 bake 配置目前优先匹配一组常见动画名：
+
+- `idle`: `Relax`, `Idle`, `Default`, `Stand`
+- `running-right` / `running`: `Move`, `Run`, `Walk`
+- `waving` / `review`: `Interact`, `Hello`, `Wave`, `Special`
+- `failed`: `Sleep`, `Fail`, `Down`
+- `waiting`: `Sit`, `Wait`, `Rest`
+
+如果 `waving`、`failed` 或 `waiting` 找不到，命令会回退到 `idle` 动画并在 JSON 输出里给出 warning；如果 `idle` 或 `running` 缺失，则会直接报错。
+
+为了方便非命令行用户，仓库同时提供了两个一键脚本：
+
+```bash
+./scripts/generate-codex.sh 佩佩 默认 基建
+```
+
+```bat
+scripts\generate-codex.bat 佩佩 默认 基建
+```
 
 解析后的清单现在包含：
 
@@ -106,12 +165,13 @@ Spine 二进制数据对运行时版本敏感。浏览器渲染器必须使用�
 
 本项目支持两个版本的 Codex 宠物规范，通过 bake 配置 JSON 中的 `codexVersion` 字段一键切换：
 
-| 版本 | 状态行数 | Spritesheet 尺寸 | 状态列表 |
-|------|----------|------------------|----------|
-| V1 (`codexVersion: 1`) | 9 行 | 1536 × 1872 (192×8 × 208×9) | idle, running-right, running-left, waving, jumping, failed, waiting, running, review |
-| V2 (`codexVersion: 2`) | 11 行 | 1536 × 2288 (192×8 × 208×11) | V1 全部 + look-directions-a, look-directions-b |
+| 版本                   | 状态行数 | Spritesheet 尺寸             | 状态列表                                                                             |
+| ---------------------- | -------- | ---------------------------- | ------------------------------------------------------------------------------------ |
+| V1 (`codexVersion: 1`) | 9 行     | 1536 × 1872 (192×8 × 208×9)  | idle, running-right, running-left, waving, jumping, failed, waiting, running, review |
+| V2 (`codexVersion: 2`) | 11 行    | 1536 × 2288 (192×8 × 208×11) | V1 全部 + look-directions-a, look-directions-b                                       |
 
 **切换方式**：直接修改配置 JSON 中的 `codexVersion` 值为 `1` 或 `2`，bake 管线会自动：
+
 1. 根据版本校验 `states` 是否覆盖了全部必填状态（缺一个都会报错）
 2. 生成对应行数的 spritesheet（每行固定 8 帧，192×208 px）
 3. 在输出的 `pet.json` 中将 `spriteVersionNumber` 设置为对应版本号
@@ -126,36 +186,36 @@ bake 命令需要一个「Codex 状态映射配置 JSON」作为 `--config` 参�
 
 ### 顶层字段
 
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `schemaVersion` | `1` | ✅ | 配置文件 schema 版本，目前固定为字面量 `1`。用于未来向前兼容。 |
-| `characterId` | string | ✅ | PRTS 角色 ID，例如 `char_4058_pepe`。**必须与本地 Spine 资源包的 manifest 完全一致**，否则 bake 会报错拒绝。 |
-| `skin` | string | ✅ | 皮肤名称，例如 `默认`。同上，必须与 manifest 匹配。 |
-| `view` | string | ✅ | 视图名称，例如 `基建`。同上，必须与 manifest 匹配。 |
-| `codexVersion` | `1 \| 2` | ✅ | Codex 宠物规范版本。决定需要覆盖哪些状态以及输出 spritesheet 的行数。 |
-| `pet` | object | ✅ | 生成的宠物元数据对象，会原样写入最终 `pet.json`。 |
-| `normalization` | object | ✅ | 帧标准化参数，控制单帧尺寸、基线位置等。 |
-| `states` | object | ✅ | 核心映射：每个 Codex 状态 → 对应源动画或派生规则。 |
+| 字段            | 类型     | 必填 | 说明                                                                                                         |
+| --------------- | -------- | ---- | ------------------------------------------------------------------------------------------------------------ |
+| `schemaVersion` | `1`      | ✅   | 配置文件 schema 版本，目前固定为字面量 `1`。用于未来向前兼容。                                               |
+| `characterId`   | string   | ✅   | PRTS 角色 ID，例如 `char_4058_pepe`。**必须与本地 Spine 资源包的 manifest 完全一致**，否则 bake 会报错拒绝。 |
+| `skin`          | string   | ✅   | 皮肤名称，例如 `默认`。同上，必须与 manifest 匹配。                                                          |
+| `view`          | string   | ✅   | 视图名称，例如 `基建`。同上，必须与 manifest 匹配。                                                          |
+| `codexVersion`  | `1 \| 2` | ✅   | Codex 宠物规范版本。决定需要覆盖哪些状态以及输出 spritesheet 的行数。                                        |
+| `pet`           | object   | ✅   | 生成的宠物元数据对象，会原样写入最终 `pet.json`。                                                            |
+| `normalization` | object   | ✅   | 帧标准化参数，控制单帧尺寸、基线位置等。                                                                     |
+| `states`        | object   | ✅   | 核心映射：每个 Codex 状态 → 对应源动画或派生规则。                                                           |
 
 ### `pet` 对象
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `id` | string | 宠物唯一 ID，正则约束：`^[a-z0-9][a-z0-9_-]*$`（小写字母/数字开头，可含下划线和短横线）。 |
-| `displayName` | string | 宠物展示名称，任意非空字符串。 |
-| `description` | string | 宠物描述文本，任意非空字符串。 |
+| 字段          | 类型   | 说明                                                                                      |
+| ------------- | ------ | ----------------------------------------------------------------------------------------- |
+| `id`          | string | 宠物唯一 ID，正则约束：`^[a-z0-9][a-z0-9_-]*$`（小写字母/数字开头，可含下划线和短横线）。 |
+| `displayName` | string | 宠物展示名称，任意非空字符串。                                                            |
+| `description` | string | 宠物描述文本，任意非空字符串。                                                            |
 
 ### `normalization` 对象（帧标准化）
 
 所有字段均为固定字面量或受严格范围约束：
 
-| 字段 | 类型 | 约束 | 说明 |
-|------|------|------|------|
-| `cellWidth` | `192` | 固定字面量 | 单帧宽度（px）。目前 Codex 规范固定为 192。 |
-| `cellHeight` | `208` | 固定字面量 | 单帧高度（px）。目前 Codex 规范固定为 208。 |
-| `anchor` | `"bottom-center"` | 固定字面量 | 锚点位置，仅支持「底部居中」。 |
-| `baselineY` | integer | 1 ≤ x ≤ 207 | 脚基线的 Y 坐标（px，从帧顶部算起）。角色脚底与这一水平线对齐，保证不同动画的角色不会上下漂浮。需要通过 preview 目测调整到合适值。 |
-| `padding` | integer | 0 ≤ x ≤ 95 | 四周透明内边距（px）。防止动画幅度大时角色被边缘裁切。 |
+| 字段         | 类型              | 约束        | 说明                                                                                                                               |
+| ------------ | ----------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `cellWidth`  | `192`             | 固定字面量  | 单帧宽度（px）。目前 Codex 规范固定为 192。                                                                                        |
+| `cellHeight` | `208`             | 固定字面量  | 单帧高度（px）。目前 Codex 规范固定为 208。                                                                                        |
+| `anchor`     | `"bottom-center"` | 固定字面量  | 锚点位置，仅支持「底部居中」。                                                                                                     |
+| `baselineY`  | integer           | 1 ≤ x ≤ 207 | 脚基线的 Y 坐标（px，从帧顶部算起）。角色脚底与这一水平线对齐，保证不同动画的角色不会上下漂浮。需要通过 preview 目测调整到合适值。 |
+| `padding`    | integer           | 0 ≤ x ≤ 95  | 四周透明内边距（px）。防止动画幅度大时角色被边缘裁切。                                                                             |
 
 ### `states` 对象（核心映射）
 
@@ -170,10 +230,10 @@ bake 命令需要一个「Codex 状态映射配置 JSON」作为 `--config` 参�
 }
 ```
 
-| 字段 | 类型 | 约束 | 说明 |
-|------|------|------|------|
-| `animation` | string | 非空 | Spine 源动画的名称。必须存在于 `inspect-animations` 输出的动画列表中，否则 bake 报错。 |
-| `frames` | `8` | 固定字面量 | 采样帧数。Codex 规范固定每状态 8 帧。 |
+| 字段        | 类型   | 约束       | 说明                                                                                   |
+| ----------- | ------ | ---------- | -------------------------------------------------------------------------------------- |
+| `animation` | string | 非空       | Spine 源动画的名称。必须存在于 `inspect-animations` 输出的动画列表中，否则 bake 报错。 |
+| `frames`    | `8`    | 固定字面量 | 采样帧数。Codex 规范固定每状态 8 帧。                                                  |
 
 > bake 会对所有「直接映射」的动画取一个 **共享联合边界（sharedBounds）**，然后用相同的缩放比例渲染，保证不同动画的角色大小一致。
 
@@ -195,11 +255,11 @@ bake 命令需要一个「Codex 状态映射配置 JSON」作为 `--config` 参�
 }
 ```
 
-| 字段 | 类型 | 约束 | 说明 |
-|------|------|------|------|
-| `deriveFrom` | string | 必须是已定义的 Codex 状态名 | 派生的源状态。**该状态必须在配置中比当前状态先定义好**（因为派生处理是按序的）。 |
-| `flipX` | `true` | 可选，字面量 | 水平翻转（镜像）。用于例如「向左奔跑」从「向右奔跑」派生。 |
-| `offsetY` | `number[8]` | 可选，长度为 8 的整数数组 | 逐帧的垂直偏移（px，正值向下，负值向上）。用于合成没有源动画的动作，例如跳跃：向上弧线路径由负偏移模拟。8 个元素分别对应第 0~7 帧的偏移量。 |
+| 字段         | 类型        | 约束                        | 说明                                                                                                                                        |
+| ------------ | ----------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `deriveFrom` | string      | 必须是已定义的 Codex 状态名 | 派生的源状态。**该状态必须在配置中比当前状态先定义好**（因为派生处理是按序的）。                                                            |
+| `flipX`      | `true`      | 可选，字面量                | 水平翻转（镜像）。用于例如「向左奔跑」从「向右奔跑」派生。                                                                                  |
+| `offsetY`    | `number[8]` | 可选，长度为 8 的整数数组   | 逐帧的垂直偏移（px，正值向下，负值向上）。用于合成没有源动画的动作，例如跳跃：向上弧线路径由负偏移模拟。8 个元素分别对应第 0~7 帧的偏移量。 |
 
 > ⚠️ 派生状态的校验约束：至少包含 `flipX` **或** `offsetY` 其中之一（可以都有），两者都没有会被 Zod 拒绝。
 
@@ -221,7 +281,7 @@ bake 命令需要一个「Codex 状态映射配置 JSON」作为 `--config` 参�
   "pet": {
     "id": "pepe",
     "displayName": "佩佩",
-    "description": "Arknights operator Pepe"
+    "description": "Arknights operator Pepe",
   },
 
   // 帧标准化参数
@@ -229,36 +289,36 @@ bake 命令需要一个「Codex 状态映射配置 JSON」作为 `--config` 参�
     "cellWidth": 192,
     "cellHeight": 208,
     "anchor": "bottom-center",
-    "baselineY": 198,   // 脚基线位置，根据角色调整
-    "padding": 10       // 防裁切边距
+    "baselineY": 198, // 脚基线位置，根据角色调整
+    "padding": 10, // 防裁切边距
   },
 
   // 状态映射：顺序无所谓，但必须覆盖 codexVersion 的全部状态
   "states": {
     // === 以下 9 个是 V1/V2 通用 ===
-    "idle":     { "animation": "Relax",    "frames": 8 },
+    "idle": { "animation": "Relax", "frames": 8 },
     "running-right": { "animation": "Move", "frames": 8 },
 
     // 派生：镜像右奔跑 → 左奔跑（不需要重新渲染）
-    "running-left":  { "deriveFrom": "running-right", "flipX": true },
+    "running-left": { "deriveFrom": "running-right", "flipX": true },
 
-    "waving":   { "animation": "Interact", "frames": 8 },
+    "waving": { "animation": "Interact", "frames": 8 },
 
     // 派生：待机帧 + 垂直偏移弧线 → 跳跃动画
-    "jumping":  {
+    "jumping": {
       "deriveFrom": "idle",
-      "offsetY": [0, -6, -12, -18, -18, -12, -6, 0]
+      "offsetY": [0, -6, -12, -18, -18, -12, -6, 0],
     },
 
-    "failed":   { "animation": "Sleep",    "frames": 8 },
-    "waiting":  { "animation": "Sit",      "frames": 8 },
-    "running":  { "animation": "Move",     "frames": 8 },
-    "review":   { "animation": "Interact", "frames": 8 },
+    "failed": { "animation": "Sleep", "frames": 8 },
+    "waiting": { "animation": "Sit", "frames": 8 },
+    "running": { "animation": "Move", "frames": 8 },
+    "review": { "animation": "Interact", "frames": 8 },
 
     // === 以下 2 个是 V2 新增 ===
     "look-directions-a": { "animation": "Relax", "frames": 8 },
-    "look-directions-b": { "animation": "Relax", "frames": 8 }
-  }
+    "look-directions-b": { "animation": "Relax", "frames": 8 },
+  },
 }
 ```
 

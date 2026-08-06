@@ -2,7 +2,7 @@ import { createServer, type Server } from "node:http";
 import { createRequire } from "node:module";
 import { mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
-import { chromium } from "playwright";
+import { chromium, type Browser } from "playwright";
 import sharp from "sharp";
 import { parseAtlasPages } from "./atlas.js";
 import { browserPageHtml } from "./browser-page.js";
@@ -55,6 +55,16 @@ const contentTypes: Record<string, string> = {
   ".skel": "application/octet-stream",
   ".png": "image/png",
 };
+
+export function withBrowserLaunchHelp(error: unknown): Error {
+  const message = error instanceof Error ? error.message : String(error);
+  if (process.env.ARK_PET_BROWSER === "chrome") {
+    return new Error(
+      `${message}\nHint: local Chrome is unavailable. Retry with the non-Chrome command, for example "pnpm generate", "pnpm preview", or "pnpm bake".`,
+    );
+  }
+  return error instanceof Error ? error : new Error(message);
+}
 
 async function listen(server: Server): Promise<number> {
   await new Promise<void>((resolve, reject) => {
@@ -246,7 +256,13 @@ export async function renderAnimationPreview(
   if (process.env.ARK_PET_BROWSER === "chrome") {
     launchOptions.channel = "chrome";
   }
-  const browser = await chromium.launch(launchOptions);
+  let browser: Browser;
+  try {
+    browser = await chromium.launch(launchOptions);
+  } catch (error) {
+    await close(server);
+    throw withBrowserLaunchHelp(error);
+  }
   const framePaths: string[] = [];
 
   try {

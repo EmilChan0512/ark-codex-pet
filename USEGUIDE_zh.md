@@ -10,9 +10,47 @@
 pnpm install
 ```
 
+如需按角色名直接生成，先准备本地角色数据库：
+
+```bash
+pnpm sync-db
+```
+
+数据库只会读取本地 `database/prts-characters.json`，不会在 `characters` / `generate` 时自动联网更新。
+
 ---
 
-## 二、完整工作流（七步走）
+## 二、按角色名一键生成
+
+`generate` 会自动完成数据库匹配、manifest 解析、资源下载、动画检查、自动配置生成与 bake。
+
+```bash
+pnpm generate:chrome 佩佩 --skin 默认 --view 基建
+pnpm generate:chrome 伊芙利特 --skin 默认 --view 基建 --output dist/ifrit
+```
+
+如果本地还没有数据库文件，命令会直接报错并提示先执行 `pnpm sync-db`。
+
+也可以直接使用一键脚本：
+
+```bash
+./scripts/generate-codex.sh 佩佩 默认 基建
+```
+
+```bat
+scripts\generate-codex.bat 佩佩 默认 基建
+```
+
+常用辅助命令：
+
+```bash
+pnpm characters --query 佩佩
+pnpm characters --query Ifrit
+```
+
+---
+
+## 三、完整工作流（八步走）
 
 ### 第 1 步 · 查列表
 
@@ -128,9 +166,9 @@ pnpm bake -- .cache/pepe \
 
 ---
 
-## 三、Bake 配置 JSON 书写速查
+## 四、Bake 配置 JSON 书写速查
 
-### 3.1 Codex 版本切换
+### 4.1 Codex 版本切换
 
 配置文件中的 `codexVersion` 字段控制产物版本：
 
@@ -143,7 +181,7 @@ pnpm bake -- .cache/pepe \
 
 ---
 
-### 3.2 states 的两类核心映射
+### 4.2 states 的两类核心映射
 
 `states` 对象里的每个状态有两种写法：
 
@@ -185,7 +223,7 @@ pnpm bake -- .cache/pepe \
 
 ---
 
-### 3.3 编写配置的最短流程
+### 4.3 编写配置的最短流程
 
 1. 运行 `pnpm inspect-animations` → 拿到可用的 Spine 动画名列表
 2. 运行 `pnpm preview --animation Relax` → 目测动画语义匹配哪个 Codex 状态
@@ -194,7 +232,7 @@ pnpm bake -- .cache/pepe \
 
 ---
 
-### 3.4 详细字段说明
+### 4.4 详细字段说明
 
 每个字段的完整类型 / 约束 / 取值范围，请见
 [README_zh.md · Bake 配置 JSON 完整说明](README_zh.md#L123-L275) 一节。

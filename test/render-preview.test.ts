@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { transformForBaseline, transformForBounds } from "../src/render-preview.js";
+import {
+  transformForBaseline,
+  transformForBounds,
+  withBrowserLaunchHelp,
+} from "../src/render-preview.js";
 
 describe("transformForBounds", () => {
   it("fits and centers model bounds inside padded output", () => {
@@ -18,5 +22,24 @@ describe("transformForBounds", () => {
     expect(
       transformForBaseline({ x: -50, y: -190, width: 100, height: 200 }, 192, 198, 10),
     ).toEqual({ scale: 0.94, x: 96, y: 188.6 });
+  });
+});
+
+describe("withBrowserLaunchHelp", () => {
+  it("adds fallback guidance for chrome-only runs", () => {
+    const previous = process.env.ARK_PET_BROWSER;
+    process.env.ARK_PET_BROWSER = "chrome";
+
+    try {
+      expect(withBrowserLaunchHelp(new Error("Chrome not found")).message).toContain(
+        'Retry with the non-Chrome command, for example "pnpm generate", "pnpm preview", or "pnpm bake".',
+      );
+    } finally {
+      if (previous === undefined) {
+        delete process.env.ARK_PET_BROWSER;
+      } else {
+        process.env.ARK_PET_BROWSER = previous;
+      }
+    }
   });
 });

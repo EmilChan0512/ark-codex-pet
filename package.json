@@ -8,11 +8,15 @@
     "node": ">=20"
   },
   "scripts": {
+    "sync-db": "tsx src/cli.ts sync-db",
+    "characters": "tsx src/cli.ts characters",
     "inspect": "tsx src/cli.ts inspect",
     "download": "tsx src/cli.ts download",
     "inspect-animations": "tsx src/cli.ts inspect-animations",
     "preview": "tsx src/cli.ts preview",
     "bake": "tsx src/cli.ts bake",
+    "generate": "tsx src/cli.ts generate",
+    "generate:chrome": "ARK_PET_BROWSER=chrome tsx src/cli.ts generate",
     "preview:chrome": "ARK_PET_BROWSER=chrome tsx src/cli.ts preview",
     "bake:chrome": "ARK_PET_BROWSER=chrome tsx src/cli.ts bake",
     "typecheck": "tsc --noEmit",

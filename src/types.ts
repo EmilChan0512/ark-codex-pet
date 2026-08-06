@@ -18,6 +18,39 @@ export interface VariantChoice {
   file: string;
 }
 
+export const characterVariantSchema = z.object({
+  skin: z.string().min(1),
+  view: z.string().min(1),
+  file: z.string().min(1),
+});
+
+export type CharacterVariantRecord = z.infer<typeof characterVariantSchema>;
+
+export const characterDatabaseEntrySchema = z.object({
+  title: z.string().min(1),
+  name: z.string().min(1),
+  enName: z.string().min(1).optional(),
+  jpName: z.string().min(1).optional(),
+  characterId: z.string().regex(/^char_[A-Za-z0-9_]+$/),
+  sourcePageUrl: z.string().url(),
+  metaUrl: z.string().url(),
+  hasMeta: z.boolean(),
+  prefix: z.string().url().optional(),
+  variants: z.array(characterVariantSchema),
+  error: z.string().min(1).optional(),
+});
+
+export type CharacterDatabaseEntry = z.infer<typeof characterDatabaseEntrySchema>;
+
+export const characterDatabaseSchema = z.object({
+  schemaVersion: z.literal(1),
+  generatedAt: z.string().datetime(),
+  source: z.literal("prts.wiki"),
+  characters: z.array(characterDatabaseEntrySchema),
+});
+
+export type CharacterDatabase = z.infer<typeof characterDatabaseSchema>;
+
 export interface SpineSourceInfo {
   hash: string | null;
   version: string | null;
