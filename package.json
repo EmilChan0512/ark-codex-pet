@@ -13,6 +13,8 @@
     "inspect-animations": "tsx src/cli.ts inspect-animations",
     "preview": "tsx src/cli.ts preview",
     "bake": "tsx src/cli.ts bake",
+    "preview:chrome": "ARK_PET_BROWSER=chrome tsx src/cli.ts preview",
+    "bake:chrome": "ARK_PET_BROWSER=chrome tsx src/cli.ts bake",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },

@@ -32,11 +32,51 @@ pnpm exec playwright install chromium
 pnpm preview -- .cache/pepe --animation Move --frames 8 \
   --width 512 --height 512 --output .cache/preview-move
 
-# 【烘焙】核心步骤：按配置 JSON 把源动画映射到 9 个 Codex 状态
+# 【烘焙】核心步骤：按配置 JSON 把源动画映射到 Codex 状态
 # 仅渲染唯一映射的动画，应用统一缩放 + 底部中心基线
 # 派生状态（如 running-left 镜像、jumping 垂直弧线）在此步变换生成
-# 最终输出 Codex V1 资源包到 dist/pepe：
-#   pet.json + spritesheet.webp (1536×1872) + mapping.json + qa/
+# 最终输出 Codex 资源包到 dist/pepe：
+#   pet.json + spritesheet.webp + mapping.json + qa/
 pnpm bake -- .cache/pepe \
   --config examples/char_4058_pepe.codex.json \
   --output dist/pepe
+
+# ========================================================================
+# 附：Bake 配置 JSON 书写速查
+# ========================================================================
+
+# ---- Codex 版本切换 ----
+# 配置文件中的 codexVersion 字段控制版本：
+#   "codexVersion": 1   → 只需 9 个状态（idle…review）
+#   "codexVersion": 2   → 需要 11 个状态（多 look-directions-a/b）
+# 同一套配置改一个数字即可切换版本，无需改其他字段（V2 是 V1 超集）。
+
+# ---- 配置文件的两类核心映射 ----
+# states 里的每个状态有两种写法：
+#
+# ① 直接动画映射（渲染源 Spine 动画）：
+#    "idle": { "animation": "Relax", "frames": 8 }
+#    - animation：Spine 动画名，必须是 inspect-animations 里列出的那些
+#    - frames：固定写 8
+#
+# ② 派生状态（从已有的状态变换，不用重新渲染）：
+#    "running-left": { "deriveFrom": "running-right", "flipX": true }
+#    "jumping": {
+#      "deriveFrom": "idle",
+#      "offsetY": [0, -6, -12, -18, -18, -12, -6, 0]
+#    }
+#    - deriveFrom：从哪个已有状态派生（那个状态必须在派生之前就写好）
+#    - flipX: true：水平镜像
+#    - offsetY: [8 个整数]：每帧垂直偏移，正=向下，负=向上
+#    注意：flipX 和 offsetY 至少写一个
+
+# ---- 编写配置的最短流程 ----
+# 1. pnpm inspect-animations → 拿到可用的 Spine 动画名
+# 2. pnpm preview --animation Relax → 目测动画语义匹配哪个 Codex 状态
+# 3. 先填直接映射（idle、running-right 等），再派生 running-left 和 jumping
+# 4. normalization.baselineY 经验值 198、padding 经验值 10，bake 后看
+#    dist/<pet>/qa/contact-sheet.png 有没有被裁切或上下漂移，再微调
+
+# ---- 详细字段说明 ----
+# 每个字段的类型/约束/取值范围请见 README_zh.md 的
+# 「Bake 配置 JSON 完整说明」一节。

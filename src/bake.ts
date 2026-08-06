@@ -19,7 +19,19 @@ export const codexV1States = [
   "review",
 ] as const;
 
-type CodexState = (typeof codexV1States)[number];
+export const codexV2States = [
+  ...codexV1States,
+  "look-directions-a",
+  "look-directions-b",
+] as const;
+
+const codexStateSets = {
+  1: codexV1States,
+  2: codexV2States,
+} as const;
+
+export type CodexVersion = keyof typeof codexStateSets;
+export type CodexState = (typeof codexV2States)[number];
 
 const animationStateSchema = z.object({
   animation: z.string().min(1),
@@ -27,7 +39,7 @@ const animationStateSchema = z.object({
 });
 
 const derivedStateSchema = z.object({
-  deriveFrom: z.enum(codexV1States),
+  deriveFrom: z.enum(codexV2States),
   flipX: z.literal(true).optional(),
   offsetY: z.tuple([
     z.number().int(),
@@ -48,7 +60,7 @@ export const bakeConfigSchema = z.object({
   characterId: z.string().min(1),
   skin: z.string().min(1),
   view: z.string().min(1),
-  codexVersion: z.literal(1),
+  codexVersion: z.union([z.literal(1), z.literal(2)]),
   pet: z.object({
     id: z.string().regex(/^[a-z0-9][a-z0-9_-]*$/),
     displayName: z.string().min(1),
@@ -61,8 +73,16 @@ export const bakeConfigSchema = z.object({
     baselineY: z.number().int().min(1).max(207),
     padding: z.number().int().min(0).max(95),
   }),
-  states: z.record(z.enum(codexV1States), z.union([animationStateSchema, derivedStateSchema])),
-});
+  states: z.record(z.enum(codexV2States), z.union([animationStateSchema, derivedStateSchema])),
+}).refine(
+  (config) => {
+    const requiredStates = codexStateSets[config.codexVersion];
+    return requiredStates.every((state) => state in config.states);
+  },
+  {
+    message: "states must cover all required rows for the given codexVersion",
+  },
+);
 
 export type BakeConfig = z.infer<typeof bakeConfigSchema>;
 
@@ -110,6 +130,9 @@ export async function bakeCodexV1(
     throw new Error("Bake config character, skin, or view does not match the local package");
   }
 
+  const codexStates = codexStateSets[config.codexVersion];
+  const codexVersion = config.codexVersion;
+
   const outputDirectory = path.resolve(requestedOutputDirectory);
   const qaDirectory = path.join(outputDirectory, "qa");
   const animationDirectory = path.join(qaDirectory, "animations");
@@ -121,7 +144,7 @@ export async function bakeCodexV1(
 
   const report = await inspectAnimations(spinePackage, 48);
   const animationNames = new Set(
-    codexV1States.flatMap((state) => {
+    codexStates.flatMap((state) => {
       const mapping = config.states[state];
       return "animation" in mapping ? [mapping.animation] : [];
     }),
@@ -150,7 +173,7 @@ export async function bakeCodexV1(
   }
 
   const stateFrames = new Map<CodexState, string[]>();
-  for (const state of codexV1States) {
+  for (const state of codexStates) {
     const mapping = config.states[state];
     if ("animation" in mapping) {
       stateFrames.set(state, animationFrames.get(mapping.animation)!);
@@ -192,10 +215,10 @@ export async function bakeCodexV1(
   const cellWidth = config.normalization.cellWidth;
   const cellHeight = config.normalization.cellHeight;
   const sheetWidth = cellWidth * 8;
-  const sheetHeight = cellHeight * codexV1States.length;
+  const sheetHeight = cellHeight * codexStates.length;
   const composites: sharp.OverlayOptions[] = [];
-  for (let row = 0; row < codexV1States.length; row += 1) {
-    const frames = stateFrames.get(codexV1States[row]!)!;
+  for (let row = 0; row < codexStates.length; row += 1) {
+    const frames = stateFrames.get(codexStates[row]!)!;
     for (let column = 0; column < 8; column += 1) {
       composites.push({
         input: await readFile(frames[column]!),
@@ -231,6 +254,7 @@ export async function bakeCodexV1(
           displayName: config.pet.displayName,
           description: config.pet.description,
           spritesheetPath: "spritesheet.webp",
+          spriteVersionNumber: codexVersion,
         },
         null,
         2,
@@ -248,13 +272,13 @@ export async function bakeCodexV1(
       metadata.height === sheetHeight &&
       metadata.format === "webp" &&
       metadata.hasAlpha === true,
-    codexVersion: 1,
+    codexVersion,
     dimensions: { width: metadata.width, height: metadata.height },
     cell: { width: cellWidth, height: cellHeight },
-    rows: codexV1States,
+    rows: codexStates,
     sharedBounds,
     sourceAnimations: Object.fromEntries(
-      codexV1States.map((state) => [state, config.states[state]]),
+      codexStates.map((state) => [state, config.states[state]]),
     ),
     sha256: sha256(webp),
   };

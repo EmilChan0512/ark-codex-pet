@@ -3,7 +3,7 @@
   "characterId": "char_4058_pepe",
   "skin": "默认",
   "view": "基建",
-  "codexVersion": 1,
+  "codexVersion": 2,
   "pet": {
     "id": "pepe",
     "displayName": "佩佩",
@@ -28,6 +28,8 @@
     "failed": { "animation": "Sleep", "frames": 8 },
     "waiting": { "animation": "Sit", "frames": 8 },
     "running": { "animation": "Move", "frames": 8 },
-    "review": { "animation": "Interact", "frames": 8 }
+    "review": { "animation": "Interact", "frames": 8 },
+    "look-directions-a": { "animation": "Relax", "frames": 8 },
+    "look-directions-b": { "animation": "Relax", "frames": 8 }
   }
 }

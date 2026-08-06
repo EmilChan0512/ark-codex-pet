@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { codexV1States, unionBounds } from "../src/bake.js";
+import { codexV1States, codexV2States, unionBounds } from "../src/bake.js";
 
-describe("Codex V1 bake helpers", () => {
-  it("uses the fixed nine-row state order", () => {
+describe("Codex bake helpers", () => {
+  it("uses the fixed nine-row state order for v1", () => {
     expect(codexV1States).toEqual([
       "idle",
       "running-right",
@@ -13,6 +13,22 @@ describe("Codex V1 bake helpers", () => {
       "waiting",
       "running",
       "review",
+    ]);
+  });
+
+  it("uses the fixed eleven-row state order for v2", () => {
+    expect(codexV2States).toEqual([
+      "idle",
+      "running-right",
+      "running-left",
+      "waving",
+      "jumping",
+      "failed",
+      "waiting",
+      "running",
+      "review",
+      "look-directions-a",
+      "look-directions-b",
     ]);
   });
 

@@ -102,9 +102,178 @@ Spine 二进制数据对运行时版本敏感。浏览器渲染器必须使用�
 
 纹理文件名从 `.atlas` 文件中读取；工具不假定文件名为 `${base}.png`，因为一个图集可能包含多个纹理页。
 
-## 当前 Codex 映射
+## Codex 版本支持与切换
 
-佩佩的示例现已将六个可用的源动画映射到全部九行 Codex 状态。`running-left`（向左奔跑）由 `running-right`（向右奔跑）镜像得到；由于源资源包中没有跳跃动画，`jumping`（跳跃）由待机帧通过一个确定性的垂直弧线轨迹派生而来。映射文件保持可编辑状态，以便其他皮肤或角色可以选择不同的语义。
+本项目支持两个版本的 Codex 宠物规范，通过 bake 配置 JSON 中的 `codexVersion` 字段一键切换：
+
+| 版本 | 状态行数 | Spritesheet 尺寸 | 状态列表 |
+|------|----------|------------------|----------|
+| V1 (`codexVersion: 1`) | 9 行 | 1536 × 1872 (192×8 × 208×9) | idle, running-right, running-left, waving, jumping, failed, waiting, running, review |
+| V2 (`codexVersion: 2`) | 11 行 | 1536 × 2288 (192×8 × 208×11) | V1 全部 + look-directions-a, look-directions-b |
+
+**切换方式**：直接修改配置 JSON 中的 `codexVersion` 值为 `1` 或 `2`，bake 管线会自动：
+1. 根据版本校验 `states` 是否覆盖了全部必填状态（缺一个都会报错）
+2. 生成对应行数的 spritesheet（每行固定 8 帧，192×208 px）
+3. 在输出的 `pet.json` 中将 `spriteVersionNumber` 设置为对应版本号
+
+> V2 是 V1 的严格超集：V2 配置可以 bake 为 V1 输出（删去最后两行），但 V1 配置无法 bake 为 V2 输出（缺少新增的两个状态）。
+
+---
+
+## Bake 配置 JSON 完整说明
+
+bake 命令需要一个「Codex 状态映射配置 JSON」作为 `--config` 参数。该配置使用 Zod schema 在 [bake.ts#L58-L85](file:///Users/chenyi.266/Practice/ark-codex-pet/src/bake.ts#L58-L85) 中进行严格校验。以下是每个字段的详细含义：
+
+### 顶层字段
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `schemaVersion` | `1` | ✅ | 配置文件 schema 版本，目前固定为字面量 `1`。用于未来向前兼容。 |
+| `characterId` | string | ✅ | PRTS 角色 ID，例如 `char_4058_pepe`。**必须与本地 Spine 资源包的 manifest 完全一致**，否则 bake 会报错拒绝。 |
+| `skin` | string | ✅ | 皮肤名称，例如 `默认`。同上，必须与 manifest 匹配。 |
+| `view` | string | ✅ | 视图名称，例如 `基建`。同上，必须与 manifest 匹配。 |
+| `codexVersion` | `1 \| 2` | ✅ | Codex 宠物规范版本。决定需要覆盖哪些状态以及输出 spritesheet 的行数。 |
+| `pet` | object | ✅ | 生成的宠物元数据对象，会原样写入最终 `pet.json`。 |
+| `normalization` | object | ✅ | 帧标准化参数，控制单帧尺寸、基线位置等。 |
+| `states` | object | ✅ | 核心映射：每个 Codex 状态 → 对应源动画或派生规则。 |
+
+### `pet` 对象
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `id` | string | 宠物唯一 ID，正则约束：`^[a-z0-9][a-z0-9_-]*$`（小写字母/数字开头，可含下划线和短横线）。 |
+| `displayName` | string | 宠物展示名称，任意非空字符串。 |
+| `description` | string | 宠物描述文本，任意非空字符串。 |
+
+### `normalization` 对象（帧标准化）
+
+所有字段均为固定字面量或受严格范围约束：
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| `cellWidth` | `192` | 固定字面量 | 单帧宽度（px）。目前 Codex 规范固定为 192。 |
+| `cellHeight` | `208` | 固定字面量 | 单帧高度（px）。目前 Codex 规范固定为 208。 |
+| `anchor` | `"bottom-center"` | 固定字面量 | 锚点位置，仅支持「底部居中」。 |
+| `baselineY` | integer | 1 ≤ x ≤ 207 | 脚基线的 Y 坐标（px，从帧顶部算起）。角色脚底与这一水平线对齐，保证不同动画的角色不会上下漂浮。需要通过 preview 目测调整到合适值。 |
+| `padding` | integer | 0 ≤ x ≤ 95 | 四周透明内边距（px）。防止动画幅度大时角色被边缘裁切。 |
+
+### `states` 对象（核心映射）
+
+键名必须是对应 `codexVersion` 要求的全部状态（不能少，顺序不限）。每个值有两种形式：「直接动画映射」或「派生状态」。
+
+#### 形式 A：直接动画映射（源动画渲染）
+
+```json
+{
+  "animation": "Relax",
+  "frames": 8
+}
+```
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| `animation` | string | 非空 | Spine 源动画的名称。必须存在于 `inspect-animations` 输出的动画列表中，否则 bake 报错。 |
+| `frames` | `8` | 固定字面量 | 采样帧数。Codex 规范固定每状态 8 帧。 |
+
+> bake 会对所有「直接映射」的动画取一个 **共享联合边界（sharedBounds）**，然后用相同的缩放比例渲染，保证不同动画的角色大小一致。
+
+#### 形式 B：派生状态（从已有状态变换得到）
+
+无需重新渲染，对源帧进行图像变换得到。有两种变换手段，可以单独使用也可以组合使用（但至少用一个）：
+
+```json
+{
+  "deriveFrom": "running-right",
+  "flipX": true
+}
+```
+
+```json
+{
+  "deriveFrom": "idle",
+  "offsetY": [0, -6, -12, -18, -18, -12, -6, 0]
+}
+```
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| `deriveFrom` | string | 必须是已定义的 Codex 状态名 | 派生的源状态。**该状态必须在配置中比当前状态先定义好**（因为派生处理是按序的）。 |
+| `flipX` | `true` | 可选，字面量 | 水平翻转（镜像）。用于例如「向左奔跑」从「向右奔跑」派生。 |
+| `offsetY` | `number[8]` | 可选，长度为 8 的整数数组 | 逐帧的垂直偏移（px，正值向下，负值向上）。用于合成没有源动画的动作，例如跳跃：向上弧线路径由负偏移模拟。8 个元素分别对应第 0~7 帧的偏移量。 |
+
+> ⚠️ 派生状态的校验约束：至少包含 `flipX` **或** `offsetY` 其中之一（可以都有），两者都没有会被 Zod 拒绝。
+
+### 完整配置示例 + 逐行注释
+
+```jsonc
+{
+  // 固定：schema 版本号
+  "schemaVersion": 1,
+  // 角色标识，必须与下载的 Spine 包 manifest 完全匹配
+  "characterId": "char_4058_pepe",
+  "skin": "默认",
+  "view": "基建",
+
+  // Codex 版本：切到 1 就只需要前 9 个状态
+  "codexVersion": 2,
+
+  // 生成的宠物元数据
+  "pet": {
+    "id": "pepe",
+    "displayName": "佩佩",
+    "description": "Arknights operator Pepe"
+  },
+
+  // 帧标准化参数
+  "normalization": {
+    "cellWidth": 192,
+    "cellHeight": 208,
+    "anchor": "bottom-center",
+    "baselineY": 198,   // 脚基线位置，根据角色调整
+    "padding": 10       // 防裁切边距
+  },
+
+  // 状态映射：顺序无所谓，但必须覆盖 codexVersion 的全部状态
+  "states": {
+    // === 以下 9 个是 V1/V2 通用 ===
+    "idle":     { "animation": "Relax",    "frames": 8 },
+    "running-right": { "animation": "Move", "frames": 8 },
+
+    // 派生：镜像右奔跑 → 左奔跑（不需要重新渲染）
+    "running-left":  { "deriveFrom": "running-right", "flipX": true },
+
+    "waving":   { "animation": "Interact", "frames": 8 },
+
+    // 派生：待机帧 + 垂直偏移弧线 → 跳跃动画
+    "jumping":  {
+      "deriveFrom": "idle",
+      "offsetY": [0, -6, -12, -18, -18, -12, -6, 0]
+    },
+
+    "failed":   { "animation": "Sleep",    "frames": 8 },
+    "waiting":  { "animation": "Sit",      "frames": 8 },
+    "running":  { "animation": "Move",     "frames": 8 },
+    "review":   { "animation": "Interact", "frames": 8 },
+
+    // === 以下 2 个是 V2 新增 ===
+    "look-directions-a": { "animation": "Relax", "frames": 8 },
+    "look-directions-b": { "animation": "Relax", "frames": 8 }
+  }
+}
+```
+
+### 编写配置的推荐步骤
+
+1. **运行 `inspect-animations`** 获取源动画列表，记下可用的动画名称。
+2. **运行 `preview`** 逐个预览候选动画，目测哪个动画对应哪个 Codex 语义（例如 Relax→idle）。
+3. **确定共用动画**：多个 Codex 状态可以复用同一个源动画（如示例中 `review` 和 `waving` 都用 `Interact`），bake 只会渲染一次，节省时间。
+4. **填充派生状态**：
+   - 左右奔跑通常写一个 + 镜像另一个
+   - 没有 Jump 动画就用 idle + `offsetY` 合成
+5. **调整 `baselineY` 和 `padding`**：先写一个经验值（如 `baselineY: 198`, `padding: 10`），bake 后打开 `qa/contact-sheet.png` 检查是否被裁切或上下漂浮，再微调。
+6. **试运行 bake**：如果缺少状态或字段名写错，Zod 会报精确的错误信息（如 `states must cover all required rows`）。
+
+---
 
 生成的 QA 报告会验证尺寸、Alpha 通道支持、行顺序、映射关系、共享源边界以及最终 WebP 文件的 SHA-256 摘要。
 
