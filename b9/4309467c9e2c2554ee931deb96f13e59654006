@@ -1,0 +1,26 @@
+README.md
+  h_83d6990e2a4e4b 104,106-275
+README_zh.md
+  h_83d6990e2a4e4b 105,107-276
+USEGUIDE_zh.md
+  h_83d6990e2a4e4b 35,38-39,43-82
+examples/char_4058_pepe.codex.json
+  h_83d6990e2a4e4b 6,31-33
+package.json
+  h_83d6990e2a4e4b 16-17
+src/bake.ts
+  h_83d6990e2a4e4b 22-34,42,63,76-85,133-135,147,176,218,220-221,257,275,278,281
+test/bake.test.ts
+  h_83d6990e2a4e4b 2,4-5,19-34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "b94309467c9e2c2554ee931deb96f13e59654006",
+  "prompts": {},
+  "humans": {
+    "h_83d6990e2a4e4b": {
+      "author": "chenyi.266 <chenyi.266@jd.com>"
+    }
+  }
+}
