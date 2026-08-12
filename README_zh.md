@@ -1,9 +1,15 @@
 # ark-codex-pet
 
+![ark-codex-pet 像素风新手引导图](./docs/readme-onboarding-banner.png)
+
 ## 快速开始
 
 ```bash
 pnpm sync-db
+```
+
+```bash
+pnpm find 佩佩
 ```
 
 ```bash
