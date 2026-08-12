@@ -354,4 +354,4 @@ The first adapter will be selected from the exporter version reported by the PRT
 
 ## Legal note
 
-Publicly reachable assets are not automatically licensed for redistribution. Confirm the rights for game assets and the Spine Runtime before packaging or publishing generated pets.
+Character-related assets used by this project are sourced from PRTS. Copyright for the related Arknights game assets belongs to Hypergryph; this project is for technical research and personal use only.
