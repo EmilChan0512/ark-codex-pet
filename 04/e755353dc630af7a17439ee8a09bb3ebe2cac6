@@ -1,0 +1,16 @@
+README.md
+  h_83d6990e2a4e4b 2,10-13
+README_zh.md
+  h_83d6990e2a4e4b 3-4,11-14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "04e755353dc630af7a17439ee8a09bb3ebe2cac6",
+  "prompts": {},
+  "humans": {
+    "h_83d6990e2a4e4b": {
+      "author": "chenyi.266 <chenyi.266@jd.com>"
+    }
+  }
+}
