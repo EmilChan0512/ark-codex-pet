@@ -2,6 +2,10 @@
 
 > 前置条件：Node.js 20+ / pnpm 9+
 
+> 💡 使用提示
+>
+> 按需加载单个 Spine 资源包，主要用于方便个人参考或研究。
+
 ---
 
 ## 一、安装依赖
@@ -23,6 +27,8 @@ pnpm sync-db
 ## 二、按角色名一键生成
 
 `generate` 会自动完成数据库匹配、manifest 解析、资源下载、动画检查、自动配置生成与 bake。
+
+> 💡 说明：`generate` 是聚合命令，包含「解析 manifest → 下载资源 → 烘焙」的完整流程，适合单个角色单次生成。不适合用于批量循环。
 
 ```bash
 pnpm generate:chrome 佩佩 --skin 默认 --view 基建
@@ -132,6 +138,8 @@ pnpm inspect -- char_4058_pepe --skin 默认 --view 基建 \
 
 根据 manifest 中解析出的 URL，把 `.skel` / `.atlas` / 纹理下载到本地目录，
 形成一个**本地 Spine 资源包**。
+
+> 💡 说明：`inspect` 阶段只会列出资源 URL 不会下载；执行本命令即代表你已确认需要这一份 Spine 包。这一步适合单个角色手动执行，不适合批量循环。
 
 ```bash
 pnpm download -- .cache/pepe.manifest.json --output .cache/pepe

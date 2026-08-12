@@ -1,3 +1,13 @@
+//
+// 本地角色数据库构建模块。
+// 从 PRTS Wiki MediaWiki API 拉取干员页面列表，逐页解析 wikitext 取出
+// characterId，再调用 prts-client 读取 meta.json 的 skin/view 映射，
+// 最后写入本地 database/prts-characters.json。
+//
+// 只抓取结构化元数据（标题、id、映射），不下载美术资源。
+// 日常 generate / find 均读取本地 JSON，不会产生额外联网请求。
+//
+
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
@@ -12,6 +22,18 @@ import { fetchPrtsMeta, getMetaUrl, listVariants } from "./prts-client.js";
 const PRTS_API_ROOT = "https://m.prts.wiki/api.php";
 const PRTS_PAGE_ROOT = "https://m.prts.wiki/w/";
 const USER_AGENT = "ark-codex-pet/0.1";
+
+const REQUEST_INTERVAL_MS = 700;
+let lastRequestAt = 0;
+
+async function politeDelay(): Promise<void> {
+  const now = Date.now();
+  const wait = REQUEST_INTERVAL_MS - (now - lastRequestAt);
+  if (wait > 0) {
+    await new Promise((resolve) => setTimeout(resolve, wait));
+  }
+  lastRequestAt = Date.now();
+}
 
 interface CategoryMembersResponse {
   continue?: {
@@ -58,6 +80,7 @@ function expandCharacterQueryAliases(query: string): string[] {
 }
 
 async function fetchJson<T>(url: string): Promise<T> {
+  await politeDelay();
   const response = await fetch(url, {
     headers: { "user-agent": USER_AGENT },
   });
@@ -213,13 +236,16 @@ async function buildDatabaseEntry(page: CharacterPageInfo): Promise<CharacterDat
   }
 }
 
+const PAGE_FETCH_CONCURRENCY = 4;
+const META_FETCH_CONCURRENCY = 2;
+
 export async function buildCharacterDatabase(): Promise<CharacterDatabase> {
   const titles = await fetchOperatorTitles();
-  const parsedPages = await mapWithConcurrency(titles, 8, async (title) =>
+  const parsedPages = await mapWithConcurrency(titles, PAGE_FETCH_CONCURRENCY, async (title) =>
     parseCharacterPageInfo(title, await fetchPageWikitext(title)),
   );
   const operators = parsedPages.filter((entry): entry is CharacterPageInfo => entry !== null);
-  const characters = await mapWithConcurrency(operators, 6, buildDatabaseEntry);
+  const characters = await mapWithConcurrency(operators, META_FETCH_CONCURRENCY, buildDatabaseEntry);
 
   characters.sort(
     (left, right) =>

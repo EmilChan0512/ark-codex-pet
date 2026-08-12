@@ -1,6 +1,10 @@
 # ark-codex-pet
 ![ark-codex-pet 像素风新手引导图](./docs/readme-onboarding-banner.svg)
 
+> 💡 About this tool
+>
+> Loads a single Spine resource package on demand — primarily for convenient personal reference or research. Not designed for batch downloading.
+
 ## Quick Start
 
 ```bash
@@ -352,6 +356,9 @@ The generated QA report verifies dimensions, alpha support, row order, mapping, 
 
 The first adapter will be selected from the exporter version reported by the PRTS model manifest rather than hard-coded to the newest Pixi runtime.
 
-## Legal note
+## Usage Notes
 
-Character-related assets used by this project are sourced from PRTS. Copyright for the related Arknights game assets belongs to Hypergryph; this project is for technical research and personal use only.
+- **Per-person, per-package**: This tool loads one Spine resource package at a time on demand. It is designed for personal reference or research — not for batch operations.
+- **Resolve first, download later**: `inspect` parses `meta.json` and returns resource URLs only; it does not fetch textures or skeletons. You decide whether and what to actually download.
+- **Refresh your local DB manually**: `sync-db` writes `database/prts-characters.json` locally. `generate` / `find` read from that local file — run `sync-db` only when you need updated mappings.
+- **Credits**: Arknights assets referenced here are hosted by PRTS Wiki and the related copyrights belong to Hypergryph.

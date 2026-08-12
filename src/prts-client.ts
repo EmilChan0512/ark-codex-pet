@@ -1,3 +1,8 @@
+//
+// 从 PRTS 托管服务器拉取单个角色的 meta.json / .atlas / .skel。
+// 按需加载单个资源包，适合个人参考或研究使用。
+//
+
 import { parseAtlasPageNames } from "./atlas.js";
 import { readSpineBinaryHeader, recommendRuntime } from "./spine-binary.js";
 import {
@@ -9,7 +14,20 @@ import {
 
 const PRTS_ROOT = "https://torappu.prts.wiki/assets/char_spine/";
 
+const REQUEST_INTERVAL_MS = 600;
+let lastRequestAt = 0;
+
+async function politeDelay(): Promise<void> {
+  const now = Date.now();
+  const wait = REQUEST_INTERVAL_MS - (now - lastRequestAt);
+  if (wait > 0) {
+    await new Promise((resolve) => setTimeout(resolve, wait));
+  }
+  lastRequestAt = Date.now();
+}
+
 async function fetchResponse(url: string): Promise<Response> {
+  await politeDelay();
   const response = await fetch(url, {
     headers: { "user-agent": "ark-codex-pet/0.1" },
   });
@@ -75,6 +93,10 @@ export function selectVariant(
   return match;
 }
 
+//
+// 解析单个角色的 manifest：只拉取 meta.json / .atlas / .skel，
+// 并计算出纹理 URL。不会下载纹理 PNG，下不下载完全由调用者决定。
+//
 export async function resolveManifest(
   characterId: string,
   skin?: string,
@@ -108,6 +130,7 @@ export async function resolveManifest(
     baseUrl,
     skeletonUrl,
     atlasUrl,
+    // 只输出纹理 URL，不实际下载 PNG。下载由调用者显式决定。
     textureUrls: pageNames.map((name) => new URL(name, atlasUrl).href),
     spine: {
       hash: spine.hash,

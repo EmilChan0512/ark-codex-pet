@@ -243,6 +243,10 @@ program
     },
   );
 
+//
+// download 命令：按 manifest 中列出的 URL 将单个角色的 .skel / .atlas / 纹理下载到本地。
+// 适合个人参考或研究，按需加载单个资源包。不适合在脚本中循环批量调用。
+//
 program
   .command("download")
   .argument("<manifest-file>", "manifest JSON produced by inspect")
