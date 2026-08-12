@@ -1,0 +1,18 @@
+README.md
+  h_83d6990e2a4e4b 2
+README_zh.md
+  h_83d6990e2a4e4b 3
+docs/readme-onboarding-banner.svg
+  h_83d6990e2a4e4b 1-55
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "9ad39afb0e3b600da0cabdd09a85970273e6d2cf",
+  "prompts": {},
+  "humans": {
+    "h_83d6990e2a4e4b": {
+      "author": "chenyi.266 <chenyi.266@jd.com>"
+    }
+  }
+}
