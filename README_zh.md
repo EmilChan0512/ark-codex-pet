@@ -1,6 +1,6 @@
 # ark-codex-pet
 
-![ark-codex-pet 像素风新手引导图](./docs/readme-onboarding-banner.png)
+![ark-codex-pet 像素风新手引导图](./docs/readme-onboarding-banner.svg)
 
 ## 快速开始
 

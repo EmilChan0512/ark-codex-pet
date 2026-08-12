@@ -1,0 +1,55 @@
+<svg width="1200" height="360" viewBox="0 0 1200 360" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>ark-codex-pet</title>
+  <desc>ark-codex-pet banner</desc>
+  <defs>
+    <style>
+      text {
+        font-family: "SFMono-Regular", "Menlo", "Consolas", monospace;
+      }
+      .pixel {
+        shape-rendering: crispEdges;
+      }
+    </style>
+  </defs>
+
+  <rect width="1200" height="360" fill="#0B1120"/>
+  <rect x="28" y="28" width="1144" height="304" rx="24" fill="#0F172A" stroke="#23314B" stroke-width="4"/>
+
+  <g class="pixel" opacity="0.7">
+    <rect x="58" y="58" width="8" height="8" fill="#334155"/>
+    <rect x="70" y="58" width="8" height="8" fill="#334155"/>
+    <rect x="58" y="70" width="8" height="8" fill="#334155"/>
+    <rect x="1118" y="280" width="8" height="8" fill="#334155"/>
+    <rect x="1130" y="280" width="8" height="8" fill="#334155"/>
+    <rect x="1130" y="292" width="8" height="8" fill="#334155"/>
+  </g>
+
+  <text x="76" y="98" fill="#F8FAFC" font-size="42" font-weight="700">ark-codex-pet</text>
+  <g class="pixel" transform="translate(940 62)">
+    <rect x="18" y="0" width="18" height="18" fill="#FCD34D"/>
+    <rect x="0" y="18" width="18" height="18" fill="#FCD34D"/>
+    <rect x="18" y="18" width="18" height="18" fill="#FCD34D"/>
+    <rect x="36" y="18" width="18" height="18" fill="#FCD34D"/>
+    <rect x="18" y="36" width="18" height="18" fill="#FB7185"/>
+    <rect x="0" y="54" width="18" height="18" fill="#38BDF8"/>
+    <rect x="18" y="54" width="18" height="18" fill="#38BDF8"/>
+    <rect x="36" y="54" width="18" height="18" fill="#38BDF8"/>
+  </g>
+
+  <g>
+    <rect x="76" y="182" width="408" height="56" rx="14" fill="#052E2B" stroke="#14532D" stroke-width="3"/>
+    <text x="102" y="217" fill="#86EFAC" font-size="28">pnpm sync-db</text>
+  </g>
+
+  <g class="pixel" fill="#64748B">
+    <rect x="530" y="204" width="74" height="10"/>
+    <rect x="592" y="194" width="10" height="10"/>
+    <rect x="602" y="204" width="10" height="10"/>
+    <rect x="592" y="214" width="10" height="10"/>
+  </g>
+
+  <g>
+    <rect x="650" y="182" width="468" height="56" rx="14" fill="#3B2304" stroke="#92400E" stroke-width="3"/>
+    <text x="676" y="217" fill="#FCD34D" font-size="28">pnpm find 佩佩</text>
+  </g>
+</svg>
