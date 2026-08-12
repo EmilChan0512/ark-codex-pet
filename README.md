@@ -12,7 +12,7 @@ pnpm sync-db
 ```
 
 ```bash
-pnpm find Pepe
+pnpm run find Pepe
 ```
 
 ```bash

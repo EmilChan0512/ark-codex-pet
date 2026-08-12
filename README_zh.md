@@ -9,7 +9,7 @@ pnpm sync-db
 ```
 
 ```bash
-pnpm find 佩佩
+pnpm run find 佩佩
 ```
 
 ```bash

@@ -41,16 +41,16 @@ pnpm generate:chrome 伊芙利特 --skin 默认 --view 基建 --output dist/ifri
 
 如果你想生成的不是默认皮肤，而是某个时装，请按下面方式查：
 
-1. 先查角色，`pnpm find` 的结果里会直接列出该角色可用的 `variants`，以及每个变体对应的可复制命令：
+1. 先查角色，`pnpm run find` 的结果里会直接列出该角色可用的 `variants`，以及每个变体对应的可复制命令：
 
 ```bash
-pnpm find 白金
+pnpm run find 白金
 ```
 
 如果你需要机器可读的 JSON 结果，可以使用：
 
 ```bash
-pnpm find 白金 --json
+pnpm run find 白金 --json
 ```
 
 2. 直接从结果里复制：

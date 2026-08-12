@@ -286,6 +286,7 @@ program
   .option("--width <pixels>", "frame width", "512")
   .option("--height <pixels>", "frame height", "512")
   .option("--padding <pixels>", "transparent padding", "24")
+  .option("--browser <name>", "browser channel for Playwright, for example chrome")
   .requiredOption("-o, --output <directory>", "preview output directory")
   .action(
     async (
@@ -296,13 +297,16 @@ program
         width: string;
         height: string;
         padding: string;
+        browser?: string;
         output: string;
       },
     ) => {
+      if (options.browser) process.env.ARK_PET_BROWSER = options.browser;
+      const numericKeys = ["frames", "width", "height", "padding"] as const;
       const integers = Object.fromEntries(
-        ["frames", "width", "height", "padding"].map((key) => [
+        numericKeys.map((key) => [
           key,
-          Number.parseInt(options[key as keyof typeof options], 10),
+          Number.parseInt(options[key], 10),
         ]),
       ) as Record<"frames" | "width" | "height" | "padding", number>;
       if (
@@ -335,12 +339,14 @@ program
   .command("bake")
   .argument("<package-directory>", "directory produced by download")
   .requiredOption("--config <file>", "Codex state mapping JSON")
+  .option("--browser <name>", "browser channel for Playwright, for example chrome")
   .requiredOption("-o, --output <directory>", "Codex pet output directory")
   .action(
     async (
       packageDirectory: string,
-      options: { config: string; output: string },
+      options: { config: string; browser?: string; output: string },
     ) => {
+      if (options.browser) process.env.ARK_PET_BROWSER = options.browser;
       const spinePackage = await loadLocalSpinePackage(packageDirectory);
       const result = await bakeCodexV1(
         spinePackage,
@@ -365,6 +371,7 @@ program
   .option("--display-name <name>", "override generated pet display name")
   .option("--description <text>", "override generated pet description")
   .option("--config-output <file>", "write generated bake config to a file")
+  .option("--browser <name>", "browser channel for Playwright, for example chrome", "chrome")
   .option("-o, --output <directory>", "Codex pet output directory")
   .action(
     async (
@@ -381,6 +388,7 @@ program
         displayName?: string;
         description?: string;
         configOutput?: string;
+        browser: string;
         output?: string;
       },
     ) => {
@@ -438,7 +446,7 @@ program
       await downloadManifestAssets(manifest, packageDirectory);
 
       logGenerateStep(4, "Inspect animations", packageDirectory);
-      process.env.ARK_PET_BROWSER = "chrome";
+      process.env.ARK_PET_BROWSER = options.browser;
       const spinePackage = await loadLocalSpinePackage(packageDirectory);
       const report = await inspectAnimations(spinePackage);
       logGenerateStep(5, "Write auto config", cacheDirectory);
@@ -475,7 +483,7 @@ program
 
       await emitJson({
         databasePath,
-        browser: "chrome",
+        browser: options.browser,
         character: {
           query: characterName,
           name: record.name,
